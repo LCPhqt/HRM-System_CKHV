@@ -96,10 +96,13 @@ button:disabled {
 .link-btn {
   border: none;
   background: transparent;
-  color: #2563eb;
+  color: #000000;
   cursor: pointer;
   font-weight: 600;
   padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .hint {
@@ -511,6 +514,119 @@ button:disabled {
   background: #fff;
 }
 
+/* Schedule */
+.schedule-panel {
+  margin-top: 16px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+  border: 1px solid #e5e7eb;
+  padding: 16px;
+}
+
+.schedule-header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+  font-weight: 700;
+}
+
+.schedule-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.schedule-nav button {
+  padding: 6px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.nav-arrow {
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  cursor: pointer;
+  font-weight: 700;
+  color: #111827;
+}
+
+.schedule-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.schedule-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 14px;
+}
+
+.schedule-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+  min-height: 160px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+}
+
+.schedule-card.today {
+  border-color: #22c55e;
+  box-shadow: 0 6px 16px rgba(34, 197, 94, 0.15);
+}
+
+.schedule-day {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-weight: 700;
+}
+
+.schedule-weekday {
+  color: #111827;
+  font-size: 15px;
+}
+
+.schedule-date {
+  color: #2563eb;
+  font-weight: 700;
+}
+
+.schedule-status {
+  font-weight: 700;
+  margin-bottom: 6px;
+  color: #111827;
+}
+
+.schedule-note {
+  color: #475569;
+  font-size: 13px;
+}
+
+.schedule-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #dcfce7;
+  color: #15803d;
+  font-size: 12px;
+  font-weight: 700;
+  align-self: flex-start;
+}
+
 @media (max-width: 960px) {
   .employee-layout {
     grid-template-columns: 1fr;
@@ -594,12 +710,25 @@ button:disabled {
   border: 1px solid #e5e7eb;
   background: #fff;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.secondary-btn {
+  color: #111827;
+  min-width: 70px;
+  justify-content: center;
 }
 
 .danger-btn {
   border: 1px solid #fca5a5;
   background: #fee2e2;
   color: #b91c1c;
+  min-width: 70px;
+  justify-content: center;
 }
 
 .admin-cards {

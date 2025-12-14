@@ -3,6 +3,7 @@ import LoginPage from "./pages/Login";
 import RegisterPage from "./pages/Register";
 import DashboardAdmin from "./pages/DashboardAdmin";
 import DashboardEmployee from "./pages/DashboardEmployee";
+import EmployeeSchedule from "./pages/EmployeeSchedule";
 import NotFoundPage from "./pages/NotFound";
 import UnauthorizedPage from "./pages/Unauthorized";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -36,6 +37,14 @@ function App() {
         element={
           <ProtectedRoute requiredRoles={["employee", "user", "staff", "admin", "hr"]}>
             <DashboardEmployee />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/employee/schedule"
+        element={
+          <ProtectedRoute requiredRoles={["employee", "user", "staff", "admin", "hr"]}>
+            <EmployeeSchedule />
           </ProtectedRoute>
         }
       />
