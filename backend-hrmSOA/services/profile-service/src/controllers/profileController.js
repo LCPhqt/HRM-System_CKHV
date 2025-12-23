@@ -22,6 +22,18 @@ async function getProfile(req, res) {
   return res.json(profile);
 }
 
+async function deleteProfile(req, res) {
+  const deleted = await repo.deleteByUserId(req.params.id);
+  if (!deleted) return res.status(404).json({ message: 'Profile not found' });
+  return res.json(deleted);
+}
+
+async function updateProfileByAdmin(req, res) {
+  const updated = await repo.updateByUserId(req.params.id, req.body.email, req.body || {});
+  if (!updated) return res.status(404).json({ message: 'Profile not found' });
+  return res.json(updated);
+}
+
 async function bootstrapProfile(req, res) {
   const { user_id: userId, email, full_name: fullName, ...rest } = req.body || {};
   if (!userId || !email) return res.status(400).json({ message: 'user_id và email là bắt buộc' });
@@ -30,5 +42,13 @@ async function bootstrapProfile(req, res) {
   return res.status(201).json(profile);
 }
 
-module.exports = { getMyProfile, updateMyProfile, listProfiles, getProfile, bootstrapProfile };
+module.exports = {
+  getMyProfile,
+  updateMyProfile,
+  listProfiles,
+  getProfile,
+  deleteProfile,
+  updateProfileByAdmin,
+  bootstrapProfile
+};
 

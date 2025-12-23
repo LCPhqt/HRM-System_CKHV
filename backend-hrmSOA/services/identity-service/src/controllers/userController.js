@@ -11,5 +11,17 @@ async function getUser(req, res) {
   return res.json(user);
 }
 
-module.exports = { listUsers, getUser };
+async function updateUser(req, res) {
+  const updated = await userRepo.updateUser(req.params.id, req.body || {});
+  if (!updated) return res.status(404).json({ message: 'User not found' });
+  return res.json(updated);
+}
+
+async function deleteUser(req, res) {
+  const deleted = await userRepo.deleteUser(req.params.id);
+  if (!deleted) return res.status(404).json({ message: 'User not found' });
+  return res.json(deleted);
+}
+
+module.exports = { listUsers, getUser, updateUser, deleteUser };
 

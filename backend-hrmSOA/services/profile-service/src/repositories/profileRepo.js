@@ -13,7 +13,8 @@ const toDto = (doc) => {
     address: d.address ?? null,
     department: d.department ?? null,
     position: d.position ?? null,
-    updated_at: d.updatedAt
+    created_at: d.createdAt ?? null,
+    updated_at: d.updatedAt ?? null
   };
 };
 
@@ -41,7 +42,7 @@ async function getByUserId(userId) {
 }
 
 async function listProfiles() {
-  const docs = await EmployeeProfile.find().sort({ updatedAt: -1 }).lean();
+  const docs = await EmployeeProfile.find().sort({ createdAt: -1 }).lean();
   return docs.map(toDto);
 }
 
@@ -50,5 +51,14 @@ async function getById(id) {
   return toDto(doc);
 }
 
-module.exports = { upsertProfile, getByUserId, listProfiles, getById };
+async function updateByUserId(userId, email, payload) {
+  return upsertProfile(userId, email, payload);
+}
+
+async function deleteByUserId(userId) {
+  const doc = await EmployeeProfile.findOneAndDelete({ userId }).lean();
+  return toDto(doc);
+}
+
+module.exports = { upsertProfile, getByUserId, listProfiles, getById, updateByUserId, deleteByUserId };
 

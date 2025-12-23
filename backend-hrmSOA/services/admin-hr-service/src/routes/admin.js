@@ -1,6 +1,6 @@
 const express = require('express');
 const { requireAuth, requireRole } = require('../middlewares/auth');
-const { listEmployees, getEmployee } = require('../controllers/adminController');
+const { listEmployees, getEmployee, updateEmployee, deleteEmployee } = require('../controllers/adminController');
 
 const router = express.Router();
 
@@ -11,6 +11,8 @@ router.use(requireAuth, requireRole('admin'), (req, _res, next) => {
 
 router.get('/employees', listEmployees);
 router.get('/employees/:id', getEmployee);
+router.put('/employees/:id', updateEmployee);
+router.delete('/employees/:id', deleteEmployee);
 
 module.exports = router;
 

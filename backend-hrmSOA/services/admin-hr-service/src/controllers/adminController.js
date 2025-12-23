@@ -10,5 +10,15 @@ async function getEmployee(req, res) {
   return res.json(data);
 }
 
-module.exports = { listEmployees, getEmployee };
+async function updateEmployee(req, res) {
+  const data = await adminService.updateEmployee(req.token, req.params.id, req.body || {});
+  return res.json(data);
+}
+
+async function deleteEmployee(req, res) {
+  await adminService.deleteEmployee(req.token, req.params.id);
+  return res.json({ success: true });
+}
+
+module.exports = { listEmployees, getEmployee, updateEmployee, deleteEmployee };
 
