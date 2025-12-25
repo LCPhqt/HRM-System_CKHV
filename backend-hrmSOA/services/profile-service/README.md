@@ -2,7 +2,7 @@ cách chạy profile-service
 
 cd backend-hrmSOA
 
-vào service rồi profile-service
+vào cd:services rồi profile-service
 
 npm install
 

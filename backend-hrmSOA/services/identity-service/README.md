@@ -2,7 +2,7 @@ cách chạy identity-service
 
 cd backend-hrmSOA
 
-vào service rồi identity-service
+vào cd:services rồi identity-service
 
 npm install
 

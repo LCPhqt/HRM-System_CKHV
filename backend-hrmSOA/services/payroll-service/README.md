@@ -2,7 +2,7 @@ cách chạy payroll-service
 
 cd backend-hrmSOA
 
-vào service rồi payroll-service
+vào cd:services rồi payroll-service
 
 npm install
 
