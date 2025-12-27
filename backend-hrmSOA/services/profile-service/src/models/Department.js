@@ -6,6 +6,7 @@ const departmentSchema = new mongoose.Schema(
     location: { type: String, default: "" },
     manager: { type: String, default: "" },
     staffCount: { type: Number, default: 0 },
+    description: { type: String, default: "" },
   },
   { timestamps: true }
 );

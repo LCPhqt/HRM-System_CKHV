@@ -18,12 +18,16 @@ function AdminPage() {
   // ✅ Edit & Add
   const [editing, setEditing] = useState(null);
   const [adding, setAdding] = useState(false);
+  const [viewing, setViewing] = useState(null);
 
   const [addForm, setAddForm] = useState({
     full_name: "",
     email: "",
     password: "",
     confirm_password: "",
+    dob: "",
+    phone: "",
+    address: "",
     salary: "",
     position: "",
     department: "",
@@ -249,11 +253,41 @@ function AdminPage() {
         <EmployeeTable
           employees={filtered}
           onView={(emp) => {
-            alert(
-              `Tên: ${
-                emp.full_name || emp.fullName || emp.profile?.fullName || "Chưa có"
-              }\nEmail: ${emp.email}`
-            );
+            const profile = emp.profile || {};
+            setViewing({
+              email: emp.email || profile.email || "",
+              full_name:
+                emp.full_name ||
+                emp.fullName ||
+                profile.full_name ||
+                profile.fullName ||
+                "",
+              department: emp.department || profile.department || "",
+              position: emp.position || profile.position || "",
+              dob: profile.dob || "",
+              phone: profile.phone || "",
+              address: profile.address || "",
+              salary: profile.salary ?? "",
+              status: emp.status || profile.status || "working",
+              joined_at:
+                emp.joined_at ||
+                profile.createdAt ||
+                emp.createdAt ||
+                profile.created_at ||
+                emp.created_at ||
+                "",
+            });
+          }}
+          onStatusChange={async (emp, newStatus) => {
+            try {
+              await client.put(`/admin/employees/${emp.id || emp.userId || emp._id}`, {
+                status: newStatus,
+              });
+              await fetchEmployees();
+            } catch (err) {
+              alert(err.response?.data?.message || err.message);
+              throw err;
+            }
           }}
           onEdit={(emp) => {
             const profile = emp.profile || {};
@@ -261,7 +295,11 @@ function AdminPage() {
               id: emp.id || emp.userId || emp._id,
               email: emp.email || profile.email || "",
               full_name:
-                emp.full_name || emp.fullName || profile.fullName || "",
+                emp.full_name ||
+                emp.fullName ||
+                profile.full_name ||
+                profile.fullName ||
+                "",
               department: emp.department || profile.department || "",
               position: emp.position || profile.position || "",
               dob: profile.dob || "",
@@ -364,6 +402,46 @@ function AdminPage() {
                     }
                   />
                 </div>
+                <div>
+                  <label className="text-sm text-slate-600 font-medium">
+                    Ngày sinh
+                  </label>
+                  <input
+                    type="date"
+                    className="w-full border rounded-lg px-3 py-2 bg-slate-50"
+                    value={editing.dob}
+                    onChange={(e) =>
+                      setEditing((p) => ({ ...p, dob: e.target.value }))
+                    }
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm text-slate-600 font-medium">
+                    Số điện thoại
+                  </label>
+                  <input
+                    className="w-full border rounded-lg px-3 py-2 bg-slate-50"
+                    value={editing.phone}
+                    onChange={(e) =>
+                      setEditing((p) => ({ ...p, phone: e.target.value }))
+                    }
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="text-sm text-slate-600 font-medium">
+                    Địa chỉ
+                  </label>
+                  <input
+                    className="w-full border rounded-lg px-3 py-2 bg-slate-50"
+                    value={editing.address}
+                    onChange={(e) =>
+                      setEditing((p) => ({ ...p, address: e.target.value }))
+                    }
+                  />
+                </div>
+
               </div>
 
               <div className="flex justify-end gap-3">
@@ -389,6 +467,104 @@ function AdminPage() {
                   }}
                 >
                   Lưu
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ✅ VIEW MODAL */}
+        {viewing && (
+          <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-slate-800">Thông tin nhân viên</h3>
+                <button
+                  className="text-slate-500 hover:text-slate-800"
+                  onClick={() => setViewing(null)}
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-slate-600 font-medium">Email</p>
+                  <p className="mt-1 px-3 py-2 rounded-lg bg-slate-50 border text-slate-800">
+                    {viewing.email || "—"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-slate-600 font-medium">Họ và tên</p>
+                  <p className="mt-1 px-3 py-2 rounded-lg bg-slate-50 border text-slate-800">
+                    {viewing.full_name || "—"}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-sm text-slate-600 font-medium">Chức vụ</p>
+                  <p className="mt-1 px-3 py-2 rounded-lg bg-slate-50 border text-slate-800">
+                    {viewing.position || "—"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-slate-600 font-medium">Phòng ban</p>
+                  <p className="mt-1 px-3 py-2 rounded-lg bg-slate-50 border text-slate-800">
+                    {viewing.department || "—"}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-sm text-slate-600 font-medium">Ngày sinh</p>
+                  <p className="mt-1 px-3 py-2 rounded-lg bg-slate-50 border text-slate-800">
+                    {viewing.dob || "—"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-slate-600 font-medium">Số điện thoại</p>
+                  <p className="mt-1 px-3 py-2 rounded-lg bg-slate-50 border text-slate-800">
+                    {viewing.phone || "—"}
+                  </p>
+                </div>
+
+                <div className="md:col-span-2">
+                  <p className="text-sm text-slate-600 font-medium">Địa chỉ</p>
+                  <p className="mt-1 px-3 py-2 rounded-lg bg-slate-50 border text-slate-800">
+                    {viewing.address || "—"}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-sm text-slate-600 font-medium">Lương cơ bản</p>
+                  <p className="mt-1 px-3 py-2 rounded-lg bg-slate-50 border text-slate-800">
+                    {viewing.salary !== undefined && viewing.salary !== null && viewing.salary !== ""
+                      ? viewing.salary
+                      : "—"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-slate-600 font-medium">Trạng thái</p>
+                  <p className="mt-1 px-3 py-2 rounded-lg bg-slate-50 border text-slate-800 capitalize">
+                    {viewing.status || "working"}
+                  </p>
+                </div>
+
+                <div className="md:col-span-2">
+                  <p className="text-sm text-slate-600 font-medium">Ngày gia nhập</p>
+                  <p className="mt-1 px-3 py-2 rounded-lg bg-slate-50 border text-slate-800">
+                    {viewing.joined_at
+                      ? new Date(viewing.joined_at).toLocaleDateString("vi-VN")
+                      : "—"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex justify-end">
+                <button
+                  className="px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700"
+                  onClick={() => setViewing(null)}
+                >
+                  Đóng
                 </button>
               </div>
             </div>
@@ -496,6 +672,47 @@ function AdminPage() {
                       }
                     />
                   </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-sm text-slate-600 font-medium">
+                      Ngày sinh
+                    </label>
+                    <input
+                      type="date"
+                      className="w-full border rounded-lg px-3 py-2 bg-slate-50"
+                      value={addForm.dob}
+                      onChange={(e) =>
+                        setAddForm((p) => ({ ...p, dob: e.target.value }))
+                      }
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm text-slate-600 font-medium">
+                      Số điện thoại
+                    </label>
+                    <input
+                      className="w-full border rounded-lg px-3 py-2 bg-slate-50"
+                      value={addForm.phone}
+                      onChange={(e) =>
+                        setAddForm((p) => ({ ...p, phone: e.target.value }))
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm text-slate-600 font-medium">
+                    Địa chỉ
+                  </label>
+                  <input
+                    className="w-full border rounded-lg px-3 py-2 bg-slate-50"
+                    value={addForm.address}
+                    onChange={(e) =>
+                      setAddForm((p) => ({ ...p, address: e.target.value }))
+                    }
+                  />
                 </div>
 
                 <div>

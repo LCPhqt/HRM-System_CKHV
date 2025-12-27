@@ -64,7 +64,19 @@ async function updateEmployee(token, id, payload) {
 
 async function createEmployee(token, payload) {
   // Reuse identity-service register endpoint; role mặc định staff
-  const { email, password, confirm_password, full_name, salary, bonus } = payload;
+  const {
+    email,
+    password,
+    confirm_password,
+    full_name,
+    salary,
+    bonus,
+    position,
+    department,
+    dob,
+    phone,
+    address
+  } = payload;
   const registerRes = await axios.post(`${IDENTITY_SERVICE_URL}/auth/register`, {
     email,
     password,
@@ -83,7 +95,12 @@ async function createEmployee(token, payload) {
           email,
           full_name,
           salary,
-          bonus
+          bonus,
+          position,
+          department,
+          dob,
+          phone,
+          address
         },
         { headers }
       );
