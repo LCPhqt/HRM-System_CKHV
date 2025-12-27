@@ -1,3 +1,4 @@
+console.log("✅ GATEWAY UPDATED - DEPARTMENTS ROUTE ENABLED");
 require('dotenv').config({ path: require('path').join(__dirname, '.env') });
 const express = require('express');
 const cors = require('cors');
@@ -39,6 +40,8 @@ app.use('/users', proxyWithBody(IDENTITY_SERVICE_URL));
 app.use('/profiles', proxyWithBody(PROFILE_SERVICE_URL));
 app.use('/admin', proxyWithBody(ADMIN_HR_SERVICE_URL));
 app.use('/payroll', proxyWithBody(PAYROLL_SERVICE_URL));
+
+app.use('/departments', proxyWithBody(PROFILE_SERVICE_URL));  
 
 app.use((err, _req, res, _next) => {
   // eslint-disable-next-line no-console

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import LoginPage from './pages/LoginPage';
 import HomePage from './pages/HomePage';
@@ -8,11 +8,17 @@ import AdminPage from './pages/AdminPage';
 import PayrollPage from './pages/PayrollPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
+// ✅ CHỈ THÊM CHO STAFF
+import StaffProfilePage from './pages/StaffProfilePage';
+import DepartmentsPage from './pages/DepartmentsPage';
+
 function AppShell() {
   return (
     <main>
       <Routes>
+        <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<LoginPage />} />
+
         <Route
           path="/home"
           element={
@@ -21,6 +27,8 @@ function AppShell() {
             </ProtectedRoute>
           }
         />
+
+        {/* ✅ GIỮ NGUYÊN */}
         <Route
           path="/profile"
           element={
@@ -29,6 +37,28 @@ function AppShell() {
             </ProtectedRoute>
           }
         />
+
+        {/* ✅ THÊM STAFF PROFILE (có sidebar) */}
+        <Route
+          path="/staff/profile"
+          element={
+            <ProtectedRoute>
+              <StaffProfilePage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ✅ THÊM STAFF DEPARTMENTS (CHỈ STAFF ĐƯỢC VÀO) */}
+        <Route
+          path="/departments"
+          element={
+            <ProtectedRoute denyRole="admin">
+              <DepartmentsPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ✅ GIỮ NGUYÊN ADMIN */}
         <Route
           path="/admin"
           element={
@@ -37,6 +67,8 @@ function AppShell() {
             </ProtectedRoute>
           }
         />
+
+        {/* ✅ GIỮ NGUYÊN ADMIN */}
         <Route
           path="/payroll"
           element={
@@ -45,7 +77,8 @@ function AppShell() {
             </ProtectedRoute>
           }
         />
-        <Route path="*" element={<LoginPage />} />
+
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </main>
   );
@@ -61,4 +94,3 @@ function App() {
 }
 
 export default App;
-
