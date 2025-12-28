@@ -1,62 +1,323 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import React, { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 function HomePage() {
-  const { user, role, logout } = useAuth();
+  const { user, role, logout, client } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const [employees, setEmployees] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        //  Admin lấy danh sách nhân viên full (admin/employees)
+        //  Staff lấy danh sách public (profiles/public) => chỉ xem
+        const [empRes, depRes] = await Promise.all([
+          role === "admin"
+            ? client.get("/admin/employees")
+            : client.get("/profiles/public"),
+          client.get("/departments"),
+        ]);
+
+        setEmployees(empRes.data || []);
+        setDepartments(depRes.data || []);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, [client, role]);
+
+  const totalEmployees = employees.length;
+  const totalDepartments = departments.length;
+
+  // Lưu ý: staff data public có thể không có salary => avgSalary sẽ về 0 (đúng vì staff không xem lương)
+  const avgSalary = useMemo(() => {
+    const salaries = employees
+      .map((e) => e.profile?.salary ?? e.salary)
+      .filter((v) => v !== undefined && v !== null && v !== "");
+    if (!salaries.length) return 0;
+    const sum = salaries.reduce((a, b) => a + Number(b || 0), 0);
+    return Math.round(sum / salaries.length);
+  }, [employees]);
+
+  const deptStats = useMemo(() => {
+    const counter = new Map();
+    employees.forEach((e) => {
+      const dep = e.department || e.profile?.department || "Chưa phân";
+      counter.set(dep, (counter.get(dep) || 0) + 1);
+    });
+    const arr = Array.from(counter.entries());
+    arr.sort((a, b) => b[1] - a[1]);
+    return arr;
+  }, [employees]);
+
+  const maxDeptCount = useMemo(
+    () => Math.max(1, ...deptStats.map(([, count]) => count)),
+    [deptStats]
+  );
+
+  const formatMoney = (v) =>
+    Number(v || 0).toLocaleString("vi-VN", { minimumFractionDigits: 0 }) + " đ";
+
+  const hiringTrend = [
+    { label: "T1", value: 6 },
+    { label: "T2", value: 5 },
+    { label: "T3", value: 7 },
+    { label: "T4", value: 8 },
+    { label: "T5", value: 10 },
+    { label: "T6", value: 12 },
+  ];
+  const maxHiring = Math.max(1, ...hiringTrend.map((i) => i.value));
+
+  //  Menu: staff có Tổng quan + Phòng ban + Nhân viên (route staff/employees)
+  //  Admin giữ nguyên menu admin
+  const navItems =
+    role === "admin"
+      ? [
+          { label: "Tổng quan", icon: "📊", path: "/home" },
+          { label: "Nhân viên", icon: "👥", path: "/admin" },
+          { label: "Phòng ban", icon: "🏢", path: "/departments" },
+          { label: "Lương thưởng", icon: "💰", path: "/payroll" },
+        ]
+      : [
+          { label: "Tổng quan", icon: "📊", path: "/home" },
+          { label: "Phòng ban", icon: "🏢", path: "/departments" },
+          { label: "Nhân viên", icon: "👥", path: "/staff/employees" },
+        ];
+
+  const today = new Date().toLocaleDateString("vi-VN", {
+    weekday: "long",
+    day: "2-digit",
+    month: "long",
+  });
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6 flex flex-col items-center">
-      <div className="w-full max-w-4xl bg-white rounded-2xl shadow-lg p-8 space-y-4">
-        <div className="flex justify-between items-center">
+    <div className="min-h-screen bg-white text-slate-900 flex">
+      {/* Sidebar */}
+      <aside className="w-64 bg-slate-900 text-slate-200 flex flex-col">
+        <div className="p-6 flex items-center gap-3 border-b border-slate-800">
+          <div className="h-10 w-10 rounded-xl bg-indigo-500 flex items-center justify-center text-white font-bold">
+            HR
+          </div>
           <div>
-            <p className="text-sm text-slate-500">Xin chào</p>
-            <h1 className="text-2xl font-bold text-slate-800">{user?.email || 'Người dùng'}</h1>
-            <p className="text-sm text-slate-500">Vai trò: {role || 'staff'}</p>
+            <p className="text-xs uppercase tracking-widest text-slate-400">
+              HRM Core
+            </p>
+            <p className="text-sm font-semibold">Enterprise SOA</p>
+          </div>
+        </div>
+
+        <nav className="flex-1 p-4 space-y-2">
+          {navItems.map((item) => {
+            const active = location.pathname.startsWith(item.path);
+            return (
+              <button
+                key={item.label}
+                onClick={() => navigate(item.path)}
+                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition ${
+                  active
+                    ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/30"
+                    : "hover:bg-slate-800"
+                }`}
+              >
+                <span>{item.icon}</span>
+                <span>{item.label}</span>
+              </button>
+            );
+          })}
+        </nav>
+
+        <div className="p-4 border-t border-slate-800">
+          <div className="flex items-center gap-3 bg-slate-800/80 px-3 py-2 rounded-lg">
+            <div className="h-9 w-9 rounded-full bg-slate-700 flex items-center justify-center text-white">
+              {user?.email?.[0]?.toUpperCase() || "A"}
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-white">
+                {user?.email || "Đang trực tuyến"}
+              </p>
+              <p className="text-xs text-slate-400">
+                {role === "admin" ? "Quản trị viên" : "Nhân viên"}
+              </p>
+            </div>
+            <button
+              onClick={logout}
+              className="text-slate-400 hover:text-white text-lg"
+              title="Đăng xuất"
+            >
+              ↪
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      {/* Main */}
+      <main className="flex-1 bg-slate-50">
+        <div className="px-10 pt-8 pb-4 space-y-6">
+          <header className="bg-gradient-to-r from-indigo-700 to-indigo-500 text-white rounded-3xl p-8 shadow-xl">
+            <p className="text-sm opacity-90 mb-1">
+              Xin chào, {role === "admin" ? "Admin" : user?.email}
+            </p>
+            <h1 className="text-3xl font-bold">Hệ thống đang hoạt động ổn định.</h1>
+            <p className="mt-2 text-sm text-indigo-100">
+              Dưới đây là báo cáo tổng quan về tình hình nhân sự của công ty trong tháng này.
+            </p>
+          </header>
+
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <div
+              className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 cursor-pointer hover:border-indigo-200 hover:shadow-md transition"
+              //  Staff click sẽ vào trang nhân viên view-only
+              onClick={() => navigate(role === "admin" ? "/admin" : "/staff/employees")}
+            >
+              <p className="text-sm text-slate-500">Tổng nhân sự</p>
+              <div className="text-3xl font-bold text-slate-900 mt-2">{totalEmployees}</div>
+              <p className="text-xs text-emerald-600 mt-1">↗ ổn định</p>
+            </div>
+
+            <div
+              className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 cursor-pointer hover:border-indigo-200 hover:shadow-md transition"
+              //  Staff vẫn click được vào phòng ban (read-only trong DepartmentPage)
+              onClick={() => navigate("/departments")}
+            >
+              <p className="text-sm text-slate-500">Phòng ban</p>
+              <div className="text-3xl font-bold text-slate-900 mt-2">{totalDepartments}</div>
+              <p className="text-xs text-indigo-600 mt-1">Đang hoạt động</p>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+              <p className="text-sm text-slate-500">Quỹ lương tháng (ước tính)</p>
+              <div className="text-3xl font-bold text-slate-900 mt-2">
+                {formatMoney(avgSalary * totalEmployees || 0)}
+              </div>
+              <p className="text-xs text-amber-600 mt-1">Tính từ lương trung bình</p>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+              <p className="text-sm text-slate-500">Lương trung bình</p>
+              <div className="text-3xl font-bold text-slate-900 mt-2">{formatMoney(avgSalary)}</div>
+              <p className="text-xs text-emerald-600 mt-1">Trên mỗi nhân viên</p>
+            </div>
           </div>
 
-          <button
-            onClick={logout}
-            className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 font-medium"
-          >
-            Đăng xuất
-          </button>
+          <div className="grid gap-6 xl:grid-cols-3">
+            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 xl:col-span-2">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <p className="text-sm text-slate-500">Thống kê nhân sự</p>
+                  <h3 className="text-xl font-bold text-slate-900">
+                    Phân bổ nhân viên theo phòng ban
+                  </h3>
+                </div>
+                <span className="text-sm text-indigo-600 cursor-default flex items-center gap-1">
+                  Chi tiết <span className="text-base">↗</span>
+                </span>
+              </div>
+
+              {loading ? (
+                <p className="text-sm text-slate-500">Đang tải...</p>
+              ) : (
+                <div className="relative h-80 bg-slate-50 border border-slate-100 rounded-2xl p-4">
+                  <div
+                    className="absolute inset-4 rounded-xl pointer-events-none"
+                    style={{
+                      backgroundImage:
+                        "repeating-linear-gradient(to top, transparent, transparent 38px, rgba(148,163,184,0.2) 39px, rgba(148,163,184,0.2) 40px)",
+                    }}
+                  />
+                  <div className="relative h-full flex items-end justify-around gap-6">
+                    {deptStats.length === 0 && (
+                      <div className="text-sm text-slate-500">
+                        Chưa có dữ liệu phân bổ phòng ban.
+                      </div>
+                    )}
+                    {deptStats.map(([dep, count]) => (
+                      <div key={dep} className="flex flex-col items-center gap-2">
+                        <div
+                          className="w-12 rounded-xl bg-indigo-500 shadow-lg shadow-indigo-200"
+                          style={{
+                            height: `${(count / maxDeptCount) * 80 + 40}px`,
+                            minHeight: "40px",
+                          }}
+                          title={`${dep}: ${count}`}
+                        />
+                        <span className="text-xs text-slate-600 text-center w-24 leading-snug">
+                          {dep}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 flex flex-col">
+              <p className="text-sm text-slate-500">Xu hướng tuyển dụng</p>
+              <h3 className="text-xl font-bold text-slate-900 mb-4">
+                Tăng trưởng nhân sự 6 tháng
+              </h3>
+
+              <div className="flex-1 flex items-center justify-center">
+                <div className="w-full h-56 bg-white rounded-2xl relative overflow-hidden border border-slate-100">
+                  <div className="absolute inset-0 bg-gradient-to-b from-indigo-50/80 via-white to-white" />
+                  <svg
+                    className="absolute inset-0 w-full h-full"
+                    viewBox="0 0 300 200"
+                    preserveAspectRatio="none"
+                  >
+                    <defs>
+                      <linearGradient id="trendFill" x1="0" x2="0" y1="0" y2="1">
+                        <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.35" />
+                        <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.05" />
+                      </linearGradient>
+                    </defs>
+                    <path
+                      d="
+                        M 0 140
+                        C 40 110, 70 120, 100 140
+                        C 120 150, 140 140, 160 110
+                        C 190 70, 230 60, 300 40
+                        L 300 200 L 0 200 Z
+                      "
+                      fill="url(#trendFill)"
+                      stroke="none"
+                    />
+                    <path
+                      d="
+                        M 0 140
+                        C 40 110, 70 120, 100 140
+                        C 120 150, 140 140, 160 110
+                        C 190 70, 230 60, 300 40
+                      "
+                      fill="none"
+                      stroke="#8b5cf6"
+                      strokeWidth="4"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+
+                  <div className="absolute inset-x-0 bottom-12 px-4 flex justify-between text-xs text-slate-500">
+                    {hiringTrend.map((item) => (
+                      <span key={item.label}>{item.label}</span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 text-sm text-slate-500">
+                Hôm nay: <span className="font-semibold text-slate-800">{today}</span>
+              </div>
+            </div>
+          </div>
         </div>
-
-        <div className="grid gap-4 md:grid-cols-2">
-          {/* ✅ Hồ sơ cá nhân: admin vào /profile, staff vào /staff/profile */}
-          <Link
-            to={role === 'admin' ? '/profile' : '/staff/profile'}
-            className="p-4 border rounded-xl hover:border-indigo-300 hover:bg-indigo-50 transition"
-          >
-            <h3 className="font-semibold text-slate-800 mb-1">Hồ sơ cá nhân</h3>
-            <p className="text-sm text-slate-500">Xem và cập nhật thông tin của bạn.</p>
-          </Link>
-
-          {/* ✅ Thêm thông tin cá nhân: CHỈ staff mới thấy và đi vào layout dashboard */}
-          {role !== 'admin' && (
-            <Link
-              to="/staff/profile"
-              state={{ focus: true }}
-              className="p-4 border rounded-xl hover:border-emerald-300 hover:bg-emerald-50 transition"
-            >
-              <h3 className="font-semibold text-slate-800 mb-1">Thêm thông tin cá nhân</h3>
-              <p className="text-sm text-slate-500">Bổ sung thông tin để hoàn thiện hồ sơ.</p>
-            </Link>
-          )}
-
-          {/* ✅ Trang quản trị: CHỈ admin mới thấy */}
-          {role === 'admin' && (
-            <Link
-              to="/admin"
-              className="p-4 border rounded-xl hover:border-indigo-300 hover:bg-indigo-50 transition md:col-span-2"
-            >
-              <h3 className="font-semibold text-slate-800 mb-1">Trang quản trị</h3>
-              <p className="text-sm text-slate-500">Xem danh sách nhân viên đã đăng ký.</p>
-            </Link>
-          )}
-        </div>
-      </div>
+      </main>
     </div>
   );
 }

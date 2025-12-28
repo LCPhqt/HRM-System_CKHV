@@ -13,6 +13,7 @@ const toDto = (doc) => {
     address: d.address ?? null,
     department: d.department ?? null,
     position: d.position ?? null,
+    status: d.status ?? "working",
     salary: d.salary ?? null,
     bonus: d.bonus ?? null,
     created_at: d.createdAt ?? null,
@@ -21,17 +22,22 @@ const toDto = (doc) => {
 };
 
 async function upsertProfile(userId, email, payload) {
-  const update = {
-    email,
-    fullName: payload.full_name ?? payload.fullName ?? null,
-    dob: payload.dob ?? null,
-    phone: payload.phone ?? null,
-    address: payload.address ?? null,
-    department: payload.department ?? null,
-    position: payload.position ?? null,
-    salary: payload.salary ?? null,
-    bonus: payload.bonus ?? null
-  };
+  const update = {};
+
+  // Chỉ ghi đè khi payload có trường tương ứng
+  if (email !== undefined) update.email = email;
+  if (payload.full_name !== undefined || payload.fullName !== undefined) {
+    update.fullName = payload.full_name ?? payload.fullName ?? null;
+  }
+  if (payload.dob !== undefined) update.dob = payload.dob ?? null;
+  if (payload.phone !== undefined) update.phone = payload.phone ?? null;
+  if (payload.address !== undefined) update.address = payload.address ?? null;
+  if (payload.department !== undefined) update.department = payload.department ?? null;
+  if (payload.position !== undefined) update.position = payload.position ?? null;
+  if (payload.status !== undefined) update.status = payload.status;
+  if (payload.salary !== undefined) update.salary = payload.salary ?? null;
+  if (payload.bonus !== undefined) update.bonus = payload.bonus ?? null;
+
   const doc = await EmployeeProfile.findOneAndUpdate(
     { userId },
     { $set: update },

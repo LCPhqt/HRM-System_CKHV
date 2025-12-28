@@ -1,24 +1,27 @@
-import React from "react";
+import React, { useState } from "react";
 
 export default function EmployeeTable({
   employees,
   onView,
   onEdit,
   onRemove,
+  onStatusChange,
 }) {
+  const [openStatusId, setOpenStatusId] = useState(null);
+
   const formatDate = (dateString) => {
     if (!dateString) return "—";
     return new Date(dateString).toLocaleDateString("vi-VN");
   };
 
-  // ✅ Logic hiển thị chữ (Khớp với Database: leave, quit, working)
+  //  Logic hiển thị chữ (Khớp với Database: leave, quit, working)
   const statusLabel = (status) => {
     if (status === "leave") return "Nghỉ phép";
-    if (status === "quit") return "Đã nghỉ việc";
+    if (status === "quit") return "Đã nghỉ";
     return "Đang làm việc";
   };
 
-  // ✅ Logic hiển thị màu (Vàng, Xám/Đỏ, Xanh)
+  //  Logic hiển thị màu (Vàng, Xám/Đỏ, Xanh)
   const statusStyle = (status) => {
     if (status === "leave") return "bg-amber-100 text-amber-700"; // Màu vàng
     if (status === "quit") return "bg-red-100 text-red-600";      // Đã sửa thành màu Đỏ cho dễ nhìn (hoặc bạn thích màu xám thì đổi lại slate)
@@ -55,11 +58,18 @@ export default function EmployeeTable({
           const email = emp.email || profile.email || "—";
           const position = emp.position || profile.position || "Đang cập nhật";
           const department = emp.department || profile.department || "Chưa gán";
-          const createdAt = emp.createdAt || profile.createdAt || null;
+          const createdAt =
+            emp.joined_at ||
+            emp.created_at ||
+            emp.createdAt ||
+            profile.created_at ||
+            profile.createdAt ||
+            null;
 
           // 🔥 SỬA QUAN TRỌNG: Kiểm tra status ở cả 2 nơi (trong profile và ngoài emp)
           // Nếu tìm không thấy ở đâu cả thì mới cho là "working"
           const status = emp.status || profile.status || "working";
+          const rowId = emp.id || emp.userId || emp._id;
 
           // (Tùy chọn) Bật dòng này lên nếu muốn soi lỗi trong Console F12
           // console.log(`User: ${email} | Status: ${status}`);
@@ -75,6 +85,7 @@ export default function EmployeeTable({
                   {name?.[0]?.toUpperCase()}
                 </div>
                 <div>
+                  <p className="text-xs text-slate-400">ID: {rowId || "—"}</p>
                   <p className="font-semibold text-slate-800">{name}</p>
                   <p className="text-sm text-slate-500">{email}</p>
                 </div>
@@ -95,13 +106,36 @@ export default function EmployeeTable({
 
               {/* Status */}
               <div className="flex items-center">
-                <span
-                  className={`px-3 py-1 rounded-full text-xs font-semibold ${statusStyle(
-                    status
-                  )}`}
-                >
-                  ● {statusLabel(status)}
-                </span>
+                {openStatusId === rowId ? (
+                  <select
+                    className="px-3 py-2 rounded-lg border text-sm"
+                    value={status}
+                    onChange={async (e) => {
+                      const newStatus = e.target.value;
+                      try {
+                        await onStatusChange?.(emp, newStatus);
+                        setOpenStatusId(null);
+                      } catch (err) {
+                        alert(err?.message || "Cập nhật trạng thái thất bại");
+                      }
+                    }}
+                    onBlur={() => setOpenStatusId(null)}
+                  >
+                    <option value="working">Đang làm việc</option>
+                    <option value="leave">Nghỉ phép</option>
+                    <option value="quit">Đã nghỉ</option>
+                  </select>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setOpenStatusId(rowId)}
+                    className={`px-3 py-1 rounded-full text-xs font-semibold ${statusStyle(
+                      status
+                    )}`}
+                  >
+                    ● {statusLabel(status)}
+                  </button>
+                )}
               </div>
 
               {/* Actions */}

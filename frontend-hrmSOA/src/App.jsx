@@ -1,16 +1,28 @@
-import React, { useState } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
-import LoginPage from './pages/LoginPage';
-import HomePage from './pages/HomePage';
-import ProfilePage from './pages/ProfilePage';
-import AdminPage from './pages/AdminPage';
-import PayrollPage from './pages/PayrollPage';
-import ProtectedRoute from './components/ProtectedRoute';
+import React, { useState } from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider, useAuth } from "./context/AuthContext";
 
-// ✅ CHỈ THÊM CHO STAFF
-import StaffProfilePage from './pages/StaffProfilePage';
-import DepartmentsPage from './pages/DepartmentsPage';
+import LoginPage from "./pages/LoginPage";
+import HomePage from "./pages/HomePage";
+import ProfilePage from "./pages/ProfilePage";
+import AdminPage from "./pages/AdminPage";
+import PayrollPage from "./pages/PayrollPage";
+import ProtectedRoute from "./components/ProtectedRoute";
+import DepartmentPage from "./pages/DepartmentPage";
+
+//  STAFF
+import StaffProfilePage from "./pages/StaffProfilePage";
+import StaffDepartNhanVien from "./pages/StaffDepartNhanVien";
+import StaffEmployNhanvien from "./pages/StaffEmployNhanvien";
+
+//  Gate: staff vào /departments sẽ bị chuyển sang staff view
+function DepartmentGate() {
+  const { role } = useAuth();
+  if (role !== "admin") {
+    return <Navigate to="/staff/departments" replace />;
+  }
+  return <DepartmentPage />;
+}
 
 function AppShell() {
   return (
@@ -28,7 +40,6 @@ function AppShell() {
           }
         />
 
-        {/* ✅ GIỮ NGUYÊN */}
         <Route
           path="/profile"
           element={
@@ -38,7 +49,7 @@ function AppShell() {
           }
         />
 
-        {/* ✅ THÊM STAFF PROFILE (có sidebar) */}
+        {/*  STAFF PROFILE */}
         <Route
           path="/staff/profile"
           element={
@@ -48,17 +59,47 @@ function AppShell() {
           }
         />
 
-        {/* ✅ THÊM STAFF DEPARTMENTS (CHỈ STAFF ĐƯỢC VÀO) */}
+        {/*  STAFF VIEW: phòng ban dạng card */}
         <Route
-          path="/departments"
+          path="/staff/view"
           element={
-            <ProtectedRoute denyRole="admin">
-              <DepartmentsPage />
+            <ProtectedRoute>
+              <StaffDepartNhanVien />
             </ProtectedRoute>
           }
         />
 
-        {/* ✅ GIỮ NGUYÊN ADMIN */}
+        {/*  FIX: /staff/employees chạy trang staff nhân viên (giống admin nhưng chỉ Xem) */}
+        <Route
+          path="/staff/employees"
+          element={
+            <ProtectedRoute>
+              <StaffEmployNhanvien />
+            </ProtectedRoute>
+          }
+        />
+
+        {/*  giữ alias phòng ban */}
+        <Route
+          path="/staff/departments"
+          element={
+            <ProtectedRoute>
+              <Navigate to="/staff/view?tab=departments" replace />
+            </ProtectedRoute>
+          }
+        />
+
+        {/*  /departments: admin giữ nguyên UI, staff bị chuyển hướng */}
+        <Route
+          path="/departments"
+          element={
+            <ProtectedRoute>
+              <DepartmentGate />
+            </ProtectedRoute>
+          }
+        />
+
+        {/*  ADMIN giữ nguyên */}
         <Route
           path="/admin"
           element={
@@ -67,8 +108,6 @@ function AppShell() {
             </ProtectedRoute>
           }
         />
-
-        {/* ✅ GIỮ NGUYÊN ADMIN */}
         <Route
           path="/payroll"
           element={
@@ -85,7 +124,9 @@ function AppShell() {
 }
 
 function App() {
-  const [apiBase] = useState(import.meta.env.VITE_API_BASE || 'http://localhost:4000');
+  const [apiBase] = useState(
+    import.meta.env.VITE_API_BASE || "http://localhost:4000"
+  );
   return (
     <AuthProvider apiBase={apiBase}>
       <AppShell />
