@@ -4,7 +4,6 @@ const express = require('express');
 const cors = require('cors');
 const { connect } = require('./src/config/db');
 const profileRoutes = require('./src/routes/profiles');
-const departmentRoutes = require("./src/routes/departments");
 
 const PORT = process.env.PORT || 5002;
 
@@ -17,7 +16,6 @@ async function start() {
   app.get('/health', (_req, res) => res.json({ status: 'ok', service: 'profile' }));
 
   app.use('/profiles', profileRoutes);
-  app.use("/departments", departmentRoutes);
 
   app.use((err, _req, res, _next) => {
     // eslint-disable-next-line no-console

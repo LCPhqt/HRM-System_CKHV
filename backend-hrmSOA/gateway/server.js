@@ -10,7 +10,8 @@ const {
   IDENTITY_SERVICE_URL = 'http://localhost:5001',
   PROFILE_SERVICE_URL = 'http://localhost:5002',
   ADMIN_HR_SERVICE_URL = 'http://localhost:5003',
-  PAYROLL_SERVICE_URL = 'http://localhost:5004'
+  PAYROLL_SERVICE_URL = 'http://localhost:5004',
+  DEPARTMENT_SERVICE_URL = 'http://localhost:5006'
 } = process.env;
 
 const app = express();
@@ -41,7 +42,7 @@ app.use('/profiles', proxyWithBody(PROFILE_SERVICE_URL));
 app.use('/admin', proxyWithBody(ADMIN_HR_SERVICE_URL));
 app.use('/payroll', proxyWithBody(PAYROLL_SERVICE_URL));
 
-app.use('/departments', proxyWithBody(PROFILE_SERVICE_URL));  
+app.use('/departments', proxyWithBody(DEPARTMENT_SERVICE_URL));  
 
 app.use((err, _req, res, _next) => {
   // eslint-disable-next-line no-console

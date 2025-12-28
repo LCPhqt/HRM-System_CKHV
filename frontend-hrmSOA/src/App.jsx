@@ -7,10 +7,10 @@ import ProfilePage from './pages/ProfilePage';
 import AdminPage from './pages/AdminPage';
 import PayrollPage from './pages/PayrollPage';
 import ProtectedRoute from './components/ProtectedRoute';
+import DepartmentPage from './pages/DepartmentPage';
 
 // ✅ CHỈ THÊM CHO STAFF
 import StaffProfilePage from './pages/StaffProfilePage';
-import DepartmentsPage from './pages/DepartmentsPage';
 
 function AppShell() {
   return (
@@ -48,12 +48,11 @@ function AppShell() {
           }
         />
 
-        {/* ✅ THÊM STAFF DEPARTMENTS (CHỈ STAFF ĐƯỢC VÀO) */}
         <Route
           path="/departments"
           element={
-            <ProtectedRoute denyRole="admin">
-              <DepartmentsPage />
+            <ProtectedRoute>
+              <DepartmentPage />
             </ProtectedRoute>
           }
         />
