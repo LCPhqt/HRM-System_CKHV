@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 function PayrollPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { client, logout } = useAuth();
   const [runs, setRuns] = useState([]);
   const [selectedRunId, setSelectedRunId] = useState(null);
@@ -243,22 +244,25 @@ function PayrollPage() {
         </div>
         <nav className="flex-1 p-4 space-y-2">
           {[
-            { label: 'Tổng quan', icon: '🏠', onClick: () => navigate('/home') },
-            { label: 'Nhân viên', icon: '👥', onClick: () => navigate('/admin') },
-            { label: 'Phòng ban', icon: '🏢', onClick: () => {} },
-            { label: 'Lương thưởng', icon: '💰', active: true, onClick: () => {} },
-          ].map((item) => (
-            <button
-              key={item.label}
-              onClick={item.onClick}
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition ${
-                item.active ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30' : 'hover:bg-slate-800'
-              }`}
-            >
-              <span>{item.icon}</span>
-              <span>{item.label}</span>
-            </button>
-          ))}
+            { label: 'Tổng quan', icon: '🏠', path: '/home' },
+            { label: 'Nhân viên', icon: '👥', path: '/admin' },
+            { label: 'Phòng ban', icon: '🏢', path: '/departments' },
+            { label: 'Lương thưởng', icon: '💰', path: '/payroll' },
+          ].map((item) => {
+            const active = location.pathname.startsWith(item.path);
+            return (
+              <button
+                key={item.label}
+                onClick={() => navigate(item.path)}
+                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition ${
+                  active ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30' : 'hover:bg-slate-800'
+                }`}
+              >
+                <span>{item.icon}</span>
+                <span>{item.label}</span>
+              </button>
+            );
+          })}
         </nav>
         <div className="p-4 border-t border-slate-800">
           <div className="flex items-center gap-3 bg-slate-800/80 px-3 py-2 rounded-lg">

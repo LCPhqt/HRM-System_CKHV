@@ -12,7 +12,7 @@ const profileSchema = new mongoose.Schema(
     department: String,
     position: String,
 
-    // ✅ thêm status
+    //  thêm status
     status: {
       type: String,
       enum: ["working", "leave", "quit"],
