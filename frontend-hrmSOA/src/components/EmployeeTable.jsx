@@ -14,14 +14,14 @@ export default function EmployeeTable({
     return new Date(dateString).toLocaleDateString("vi-VN");
   };
 
-  // ✅ Logic hiển thị chữ (Khớp với Database: leave, quit, working)
+  //  Logic hiển thị chữ (Khớp với Database: leave, quit, working)
   const statusLabel = (status) => {
     if (status === "leave") return "Nghỉ phép";
     if (status === "quit") return "Đã nghỉ";
     return "Đang làm việc";
   };
 
-  // ✅ Logic hiển thị màu (Vàng, Xám/Đỏ, Xanh)
+  //  Logic hiển thị màu (Vàng, Xám/Đỏ, Xanh)
   const statusStyle = (status) => {
     if (status === "leave") return "bg-amber-100 text-amber-700"; // Màu vàng
     if (status === "quit") return "bg-red-100 text-red-600";      // Đã sửa thành màu Đỏ cho dễ nhìn (hoặc bạn thích màu xám thì đổi lại slate)

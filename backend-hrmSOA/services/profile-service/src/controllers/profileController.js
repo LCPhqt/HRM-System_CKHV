@@ -11,9 +11,25 @@ async function updateMyProfile(req, res) {
   return res.json(updated);
 }
 
+// ✅ ADMIN: danh sách đầy đủ
 async function listProfiles(_req, res) {
   const profiles = await repo.listProfiles();
   return res.json(profiles);
+}
+
+// ✅ STAFF + ADMIN: danh sách public (lọc field)
+async function listPublicProfiles(_req, res) {
+  const profiles = await repo.listProfiles();
+  const safe = (profiles || []).map((p) => ({
+    user_id: p.user_id || p.userId || p._id,
+    email: p.email,
+    full_name: p.full_name || p.fullName || p.name || '',
+    department: p.department || '',
+    position: p.position || '',
+    status: p.status || 'working',
+    created_at: p.created_at || p.createdAt || null,
+  }));
+  return res.json(safe);
 }
 
 async function getProfile(req, res) {
@@ -46,9 +62,9 @@ module.exports = {
   getMyProfile,
   updateMyProfile,
   listProfiles,
+  listPublicProfiles, // ✅ thêm
   getProfile,
   deleteProfile,
   updateProfileByAdmin,
   bootstrapProfile
 };
-

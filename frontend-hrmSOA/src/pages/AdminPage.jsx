@@ -11,11 +11,11 @@ function AdminPage() {
   const [employees, setEmployees] = useState([]);
   const [filter, setFilter] = useState("");
 
-  // ✅ Dropdown filter trạng thái
+  //  Dropdown filter trạng thái
   const [openFilter, setOpenFilter] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
 
-  // ✅ Edit & Add
+  //  Edit & Add
   const [editing, setEditing] = useState(null);
   const [adding, setAdding] = useState(false);
   const [viewing, setViewing] = useState(null);
@@ -57,13 +57,13 @@ function AdminPage() {
     });
   }
 
-  // ✅ search text
+  //  search text
   if (!filter) return list;
 
   return list.filter((e) => {
     const profile = e.profile || {};
 
-    // ✅ lấy tên chuẩn: ưu tiên từ profile
+    //  lấy tên chuẩn: ưu tiên từ profile
     const fullName =
       e.full_name ||
       e.fullName ||
@@ -178,7 +178,7 @@ function AdminPage() {
             />
           </div>
 
-          {/* ✅ Filter dropdown */}
+          {/*  Filter dropdown */}
           <div className="relative">
             <button
               onClick={() => setOpenFilter((p) => !p)}
@@ -320,7 +320,7 @@ function AdminPage() {
           }}
         />
 
-        {/* ✅ EDIT MODAL */}
+        {/*  EDIT MODAL */}
         {editing && (
           <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl p-6 space-y-4">
@@ -473,7 +473,7 @@ function AdminPage() {
           </div>
         )}
 
-        {/* ✅ VIEW MODAL */}
+        {/* VIEW MODAL */}
         {viewing && (
           <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl p-6 space-y-4">
@@ -571,7 +571,7 @@ function AdminPage() {
           </div>
         )}
 
-        {/* ✅ ADD MODAL */}
+        {/*  ADD MODAL */}
         {adding && (
           <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl p-6 space-y-4">

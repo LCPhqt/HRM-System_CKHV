@@ -1,16 +1,25 @@
-import React, { useState } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
-import LoginPage from './pages/LoginPage';
-import HomePage from './pages/HomePage';
-import ProfilePage from './pages/ProfilePage';
-import AdminPage from './pages/AdminPage';
-import PayrollPage from './pages/PayrollPage';
-import ProtectedRoute from './components/ProtectedRoute';
-import DepartmentPage from './pages/DepartmentPage';
+import React, { useState } from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider, useAuth } from "./context/AuthContext";
 
-// ✅ CHỈ THÊM CHO STAFF
-import StaffProfilePage from './pages/StaffProfilePage';
+import LoginPage from "./pages/LoginPage";
+import HomePage from "./pages/HomePage";
+import ProfilePage from "./pages/ProfilePage";
+import AdminPage from "./pages/AdminPage";
+import PayrollPage from "./pages/PayrollPage";
+import ProtectedRoute from "./components/ProtectedRoute";
+import DepartmentPage from "./pages/DepartmentPage";
+
+//  STAFF
+import StaffProfilePage from "./pages/StaffProfilePage";
+import StaffDepartNhanVien from "./pages/StaffDepartNhanVien";
+import StaffEmployNhanvien from "./pages/StaffEmployNhanvien";
+
+function DepartmentGate() {
+  const { role } = useAuth();
+  if (role !== "admin") return <Navigate to="/staff/departments" replace />;
+  return <DepartmentPage />;
+}
 
 function AppShell() {
   return (
@@ -28,7 +37,6 @@ function AppShell() {
           }
         />
 
-        {/* ✅ GIỮ NGUYÊN */}
         <Route
           path="/profile"
           element={
@@ -38,7 +46,17 @@ function AppShell() {
           }
         />
 
-        {/* ✅ THÊM STAFF PROFILE (có sidebar) */}
+        {/*  Alias để không rớt login nếu còn link cũ */}
+        <Route
+          path="/staff/view"
+          element={
+            <ProtectedRoute>
+              <Navigate to="/staff/departments" replace />
+            </ProtectedRoute>
+          }
+        />
+
+        {/*  STAFF */}
         <Route
           path="/staff/profile"
           element={
@@ -49,15 +67,34 @@ function AppShell() {
         />
 
         <Route
-          path="/departments"
+          path="/staff/departments"
           element={
             <ProtectedRoute>
-              <DepartmentPage />
+              <StaffDepartNhanVien />
             </ProtectedRoute>
           }
         />
 
-        {/* ✅ GIỮ NGUYÊN ADMIN */}
+        <Route
+          path="/staff/employees"
+          element={
+            <ProtectedRoute>
+              <StaffEmployNhanvien />
+            </ProtectedRoute>
+          }
+        />
+
+        {/*  admin departments */}
+        <Route
+          path="/departments"
+          element={
+            <ProtectedRoute>
+              <DepartmentGate />
+            </ProtectedRoute>
+          }
+        />
+
+        {/*  ADMIN */}
         <Route
           path="/admin"
           element={
@@ -66,8 +103,6 @@ function AppShell() {
             </ProtectedRoute>
           }
         />
-
-        {/* ✅ GIỮ NGUYÊN ADMIN */}
         <Route
           path="/payroll"
           element={
@@ -84,7 +119,7 @@ function AppShell() {
 }
 
 function App() {
-  const [apiBase] = useState(import.meta.env.VITE_API_BASE || 'http://localhost:4000');
+  const [apiBase] = useState(import.meta.env.VITE_API_BASE || "http://localhost:4000");
   return (
     <AuthProvider apiBase={apiBase}>
       <AppShell />
