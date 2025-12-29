@@ -14,10 +14,28 @@ function LoginPage() {
   const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
 
+  //  FIX: redirect an toàn theo role (tránh admin bị redirect vào staff route)
+  const getSafeRedirect = (role) => {
+    const fromPath = location.state?.from?.pathname || '/home';
+
+    // Admin không quay lại trang staff
+    if (role === 'admin') {
+      if (fromPath.startsWith('/staff')) return '/home';
+      return fromPath; // /home /admin /departments /payroll...
+    }
+
+    // Staff không quay lại trang admin/payroll
+    if (fromPath.startsWith('/admin') || fromPath.startsWith('/payroll')) return '/home';
+
+    // Staff không đi vào /departments (page admin) => chuyển về staff departments
+    if (fromPath.startsWith('/departments')) return '/staff/departments';
+
+    return fromPath;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Khi đăng ký: kiểm tra password và confirmPassword
     if (!isLogin && password !== confirmPassword) {
       alert('Mật khẩu nhập lại không khớp');
       return;
@@ -34,25 +52,29 @@ function LoginPage() {
 
       //  CHỈ đăng nhập khi đang ở mode Đăng nhập
       if (isLogin) {
-        setToken(data.accessToken);
-        setRole(data.role);
-        setUser({ email, role: data.role });
+        // token có thể là accessToken
+        const token = data.accessToken || data.token;
+        const role = data.role;
 
-        const redirect = location.state?.from?.pathname || '/home';
-        navigate(redirect, { replace: true });
+        setToken(token);
+        setRole(role);
+        setUser({ email, role });
+
+        //  redirect an toàn theo role
+        const redirect = getSafeRedirect(role);
+
+        // QUAN TRỌNG: xóa state.from để lần sau không bị dính lại
+        navigate(redirect, { replace: true, state: {} });
+        window.history.replaceState({}, document.title);
       } else {
-        //  Đăng ký xong: KHÔNG setToken => không auto-login
+        //  Đăng ký xong: KHÔNG auto-login
         alert('Đăng ký thành công! Vui lòng đăng nhập để tiếp tục.');
 
-        // chuyển về mode đăng nhập
         setIsLogin(true);
-
-        // reset các field đăng ký, giữ email lại cho tiện
         setPassword('');
         setConfirmPassword('');
         setFullName('');
 
-        // đảm bảo không bị dính trạng thái login cũ (nếu có)
         setToken('');
         setRole('');
         setUser(null);
@@ -69,7 +91,7 @@ function LoginPage() {
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 md:p-8">
       <div className="bg-white w-full max-w-5xl rounded-[32px] shadow-2xl overflow-hidden flex flex-col md:flex-row min-h-[620px] animate-fade-in">
-        {/* Bên trái - Biểu mẫu */}
+        {/* Left */}
         <div className="w-full md:w-1/2 p-8 md:p-12 lg:p-16 flex flex-col justify-center relative">
           <div className="mb-8">
             <div className="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center mb-4 shadow-lg shadow-indigo-200 text-white text-xl">
@@ -153,7 +175,7 @@ function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
+              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-60"
             >
               {loading ? 'Đang xử lý...' : isLogin ? 'Đăng nhập' : 'Đăng ký'}
             </button>
@@ -173,7 +195,7 @@ function LoginPage() {
           </div>
         </div>
 
-        {/* Bên phải - Trang trí*/}
+        {/* Right */}
         <div className="hidden md:flex w-1/2 bg-gradient-to-br from-indigo-600 via-violet-600 to-purple-700 p-12 text-white flex-col justify-between relative overflow-hidden">
           <div className="absolute top-0 right-0 w-96 h-96 bg-white opacity-5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
           <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-400 opacity-10 rounded-full translate-y-1/2 -translate-x-1/2 blur-2xl"></div>
@@ -193,7 +215,7 @@ function LoginPage() {
 
           <div className="relative z-10 space-y-4">
             <div className="flex items-center gap-4 bg-white/10 backdrop-blur-sm p-4 rounded-2xl border border-white/10">
-              <div className="p-2 bg-emerald-500 rounded-lg shadow-lg">✅</div>
+              <div className="p-2 bg-emerald-500 rounded-lg shadow-lg"></div>
               <div>
                 <p className="font-bold text-sm">Quản lý lương tự động</p>
                 <p className="text-xs text-indigo-100">Chính xác tuyệt đối</p>

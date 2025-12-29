@@ -15,12 +15,9 @@ import StaffProfilePage from "./pages/StaffProfilePage";
 import StaffDepartNhanVien from "./pages/StaffDepartNhanVien";
 import StaffEmployNhanvien from "./pages/StaffEmployNhanvien";
 
-//  Gate: staff vào /departments sẽ bị chuyển sang staff view
 function DepartmentGate() {
   const { role } = useAuth();
-  if (role !== "admin") {
-    return <Navigate to="/staff/departments" replace />;
-  }
+  if (role !== "admin") return <Navigate to="/staff/departments" replace />;
   return <DepartmentPage />;
 }
 
@@ -49,7 +46,17 @@ function AppShell() {
           }
         />
 
-        {/*  STAFF PROFILE */}
+        {/*  Alias để không rớt login nếu còn link cũ */}
+        <Route
+          path="/staff/view"
+          element={
+            <ProtectedRoute>
+              <Navigate to="/staff/departments" replace />
+            </ProtectedRoute>
+          }
+        />
+
+        {/*  STAFF */}
         <Route
           path="/staff/profile"
           element={
@@ -59,9 +66,8 @@ function AppShell() {
           }
         />
 
-        {/*  STAFF VIEW: phòng ban dạng card */}
         <Route
-          path="/staff/view"
+          path="/staff/departments"
           element={
             <ProtectedRoute>
               <StaffDepartNhanVien />
@@ -69,7 +75,6 @@ function AppShell() {
           }
         />
 
-        {/*  FIX: /staff/employees chạy trang staff nhân viên (giống admin nhưng chỉ Xem) */}
         <Route
           path="/staff/employees"
           element={
@@ -79,17 +84,7 @@ function AppShell() {
           }
         />
 
-        {/*  giữ alias phòng ban */}
-        <Route
-          path="/staff/departments"
-          element={
-            <ProtectedRoute>
-              <Navigate to="/staff/view?tab=departments" replace />
-            </ProtectedRoute>
-          }
-        />
-
-        {/*  /departments: admin giữ nguyên UI, staff bị chuyển hướng */}
+        {/*  admin departments */}
         <Route
           path="/departments"
           element={
@@ -99,7 +94,7 @@ function AppShell() {
           }
         />
 
-        {/*  ADMIN giữ nguyên */}
+        {/*  ADMIN */}
         <Route
           path="/admin"
           element={
@@ -124,9 +119,7 @@ function AppShell() {
 }
 
 function App() {
-  const [apiBase] = useState(
-    import.meta.env.VITE_API_BASE || "http://localhost:4000"
-  );
+  const [apiBase] = useState(import.meta.env.VITE_API_BASE || "http://localhost:4000");
   return (
     <AuthProvider apiBase={apiBase}>
       <AppShell />
