@@ -12,14 +12,30 @@ async function listEmployees(token) {
   const profileByUserId = new Map(profiles.map((p) => [String(p.user_id), p]));
   return users.map((u) => {
     const profile = profileByUserId.get(String(u.id)) || null;
+    const full_name =
+      profile?.full_name ||
+      profile?.fullName ||
+      u.full_name ||
+      u.fullName ||
+      u.name ||
+      "";
+    const email = profile?.email || u.email || "";
+    const position = profile?.position || u.position || "";
+    const department = profile?.department || u.department || "";
+
     const joined_at =
       profile?.created_at ||
       profile?.createdAt ||
       u.created_at ||
       u.createdAt ||
       null;
+
     return {
       ...u,
+      full_name,
+      email,
+      position,
+      department,
       profile,
       joined_at
     };

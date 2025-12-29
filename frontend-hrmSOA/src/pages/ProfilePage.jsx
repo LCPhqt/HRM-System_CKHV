@@ -23,7 +23,7 @@ function Field({ label, icon, value }) {
  * ✅ readOnly=true: chỉ xem (STAFF)
  * ✅ readOnly=false (default): giữ nguyên chức năng sửa/lưu (ADMIN + user như cũ)
  */
-function ProfilePage({ readOnly = false }) {
+function ProfilePage({ readOnly = false, actionSlot = null }) {
   const { client, role, user } = useAuth();
   const navigate = useNavigate();
 
@@ -121,9 +121,13 @@ function ProfilePage({ readOnly = false }) {
               </p>
             </div>
 
-            <div className="h-14 w-14 rounded-full bg-white border border-slate-200 shadow-sm flex items-center justify-center text-slate-700 font-extrabold">
-              {avatarText}
-            </div>
+            {actionSlot ? (
+              actionSlot
+            ) : (
+              <div className="h-14 w-14 rounded-full bg-white border border-slate-200 shadow-sm flex items-center justify-center text-slate-700 font-extrabold">
+                {avatarText}
+              </div>
+            )}
           </div>
 
           {/* Card */}

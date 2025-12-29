@@ -7,7 +7,10 @@ async function getMyProfile(req, res) {
 }
 
 async function updateMyProfile(req, res) {
-  const updated = await repo.upsertProfile(req.user.id, req.user.email, req.body || {});
+  const body = req.body || {};
+  // Ưu tiên email từ payload nếu có, fallback email từ token
+  const emailToSave = body.email ?? req.user.email;
+  const updated = await repo.upsertProfile(req.user.id, emailToSave, body);
   return res.json(updated);
 }
 

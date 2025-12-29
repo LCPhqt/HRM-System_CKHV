@@ -2,14 +2,20 @@ import React from 'react';
 
 function ProfileForm({ profile, onChange, onSubmit, loading }) {
   return (
-    <form onSubmit={onSubmit} className="space-y-4">
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSubmit && onSubmit();
+      }}
+      className="space-y-4"
+    >
       <div className="grid md:grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-1">Họ và tên</label>
           <input
             name="full_name"
             value={profile.full_name || ''}
-            onChange={onChange}
+            onChange={(e) => onChange && onChange(e.target.name, e.target.value)}
             required
             className="w-full border rounded-lg px-3 py-2 bg-slate-50 focus:ring-2 focus:ring-indigo-500"
           />
@@ -20,7 +26,7 @@ function ProfileForm({ profile, onChange, onSubmit, loading }) {
             name="email"
             type="email"
             value={profile.email || ''}
-            onChange={onChange}
+            onChange={(e) => onChange && onChange(e.target.name, e.target.value)}
             required
             className="w-full border rounded-lg px-3 py-2 bg-slate-50 focus:ring-2 focus:ring-indigo-500"
           />
@@ -31,7 +37,7 @@ function ProfileForm({ profile, onChange, onSubmit, loading }) {
             name="dob"
             type="date"
             value={profile.dob || ''}
-            onChange={onChange}
+            onChange={(e) => onChange && onChange(e.target.name, e.target.value)}
             className="w-full border rounded-lg px-3 py-2 bg-slate-50 focus:ring-2 focus:ring-indigo-500"
           />
         </div>
@@ -40,7 +46,7 @@ function ProfileForm({ profile, onChange, onSubmit, loading }) {
           <input
             name="phone"
             value={profile.phone || ''}
-            onChange={onChange}
+            onChange={(e) => onChange && onChange(e.target.name, e.target.value)}
             className="w-full border rounded-lg px-3 py-2 bg-slate-50 focus:ring-2 focus:ring-indigo-500"
           />
         </div>
@@ -49,7 +55,7 @@ function ProfileForm({ profile, onChange, onSubmit, loading }) {
           <input
             name="address"
             value={profile.address || ''}
-            onChange={onChange}
+            onChange={(e) => onChange && onChange(e.target.name, e.target.value)}
             className="w-full border rounded-lg px-3 py-2 bg-slate-50 focus:ring-2 focus:ring-indigo-500"
           />
         </div>
@@ -58,7 +64,7 @@ function ProfileForm({ profile, onChange, onSubmit, loading }) {
           <input
             name="department"
             value={profile.department || ''}
-            onChange={onChange}
+            onChange={(e) => onChange && onChange(e.target.name, e.target.value)}
             className="w-full border rounded-lg px-3 py-2 bg-slate-50 focus:ring-2 focus:ring-indigo-500"
           />
         </div>
@@ -67,7 +73,7 @@ function ProfileForm({ profile, onChange, onSubmit, loading }) {
           <input
             name="position"
             value={profile.position || ''}
-            onChange={onChange}
+            onChange={(e) => onChange && onChange(e.target.name, e.target.value)}
             className="w-full border rounded-lg px-3 py-2 bg-slate-50 focus:ring-2 focus:ring-indigo-500"
           />
         </div>
