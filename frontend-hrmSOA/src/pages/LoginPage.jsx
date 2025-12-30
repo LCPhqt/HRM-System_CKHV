@@ -12,6 +12,36 @@ function LoginPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const EyeIcon = ({ closed = false }) => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="w-5 h-5"
+      aria-hidden="true"
+    >
+      {closed ? (
+        <>
+          <path d="m3 3 18 18" />
+          <path d="M10.7 10.7a2 2 0 0 0 2.6 2.6" />
+          <path d="M9.5 5.1A9 9 0 0 1 12 5c5 0 9 5 9 7 0 1.2-1.4 3.3-3.6 5" />
+          <path d="M6.1 6.1C4.1 7.5 3 9.4 3 12c0 1.2 1.4 3.3 3.6 5 1.2.9 2.7 1.7 4.4 1.9" />
+        </>
+      ) : (
+        <>
+          <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12Z" />
+          <circle cx="12" cy="12" r="3" />
+        </>
+      )}
+    </svg>
+  );
   const [loading, setLoading] = useState(false);
 
   //  FIX: redirect an toàn theo role (tránh admin bị redirect vào staff route)
@@ -35,6 +65,11 @@ function LoginPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (password.length < 8) {
+      alert('Mật khẩu phải có ít nhất 8 ký tự.');
+      return;
+    }
 
     if (!isLogin && password !== confirmPassword) {
       alert('Mật khẩu nhập lại không khớp');
@@ -126,13 +161,13 @@ function LoginPage() {
             )}
 
             <div className="space-y-1.5">
-              <label className="text-sm font-semibold text-slate-700">Email công việc</label>
+              <label className="text-sm font-semibold text-slate-700">Email</label>
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">📧</span>
                 <input
                   type="email"
                   required
-                  placeholder="name@company.com"
+                  placeholder="@gmail.com"
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3.5 pl-11 pr-4 outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all font-medium text-slate-700"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -145,29 +180,47 @@ function LoginPage() {
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">🔒</span>
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   required
+                  minLength={8}
                   placeholder="••••••••"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3.5 pl-11 pr-4 outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all font-medium text-slate-700"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3.5 pl-11 pr-12 outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all font-medium text-slate-700"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none"
+                  aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiển thị mật khẩu'}
+                >
+                  <EyeIcon closed={showPassword} />
+                </button>
               </div>
             </div>
 
             {!isLogin && (
               <div className="space-y-1.5 animate-fade-in">
-                <label className="text-sm font-semibold text-slate-700">Xác nhận mật khẩu</label>
+                <label className="text-sm font-semibold text-slate-700">Nhập lại mật khẩu</label>
                 <div className="relative">
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">🔒</span>
                   <input
-                    type="password"
+                    type={showConfirmPassword ? 'text' : 'password'}
                     required
+                    minLength={8}
                     placeholder="••••••••"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3.5 pl-11 pr-4 outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all font-medium text-slate-700"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3.5 pl-11 pr-12 outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all font-medium text-slate-700"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword((prev) => !prev)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none"
+                    aria-label={showConfirmPassword ? 'Ẩn xác nhận mật khẩu' : 'Hiển thị xác nhận mật khẩu'}
+                  >
+                    <EyeIcon closed={showConfirmPassword} />
+                  </button>
                 </div>
               </div>
             )}
