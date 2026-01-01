@@ -2,6 +2,7 @@ const express = require("express");
 const { requireAuth } = require("../middlewares/auth");
 const {
   listCustomers,
+  countCustomers,
   getCustomer,
   createCustomer,
   updateCustomer,
@@ -15,6 +16,7 @@ router.use(requireAuth);
 
 // Read: staff + admin
 router.get("/", listCustomers);
+router.get("/count", countCustomers);
 router.post("/import", importCustomers);
 router.get("/:id", getCustomer);
 

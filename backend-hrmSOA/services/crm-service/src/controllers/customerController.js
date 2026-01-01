@@ -18,6 +18,13 @@ async function listCustomers(req, res) {
   return res.json(customers);
 }
 
+async function countCustomers(req, res) {
+  const { search, status, ownerId } = req.query || {};
+  const effectiveOwnerId = isAdmin(req) ? ownerId : String(req.user?.id || "");
+  const count = await repo.countCustomers({ search, status, ownerId: effectiveOwnerId });
+  return res.json({ count });
+}
+
 async function getCustomer(req, res) {
   const customer = await repo.getCustomer(req.params.id);
   if (!customer) return res.status(404).json({ message: "Không tìm thấy khách hàng" });
@@ -33,6 +40,10 @@ async function createCustomer(req, res) {
 
   // staff: auto-assign ownerId = user.id, không cho gán owner người khác
   const assignedOwnerId = isAdmin(req) ? String(ownerId || "") : String(req.user?.id || "");
+  const ownerName =
+    isAdmin(req) && req.body?.ownerName
+      ? String(req.body.ownerName || "")
+      : req.user?.email || "";
 
   const exist = await repo.findByNameAndOwner(name, assignedOwnerId);
   if (exist) return res.status(400).json({ message: "Khách hàng đã tồn tại" });
@@ -44,6 +55,7 @@ async function createCustomer(req, res) {
     address: address || "",
     industry: industry || "",
     ownerId: assignedOwnerId,
+    ownerName: ownerName || "",
     status: status || "lead",
     tags: Array.isArray(tags) ? tags : []
   });
@@ -86,6 +98,7 @@ async function updateCustomer(req, res) {
     ...("address" in payload ? { address: payload.address || "" } : {}),
     ...("industry" in payload ? { industry: payload.industry || "" } : {}),
     ...(isAdmin(req) && "ownerId" in payload ? { ownerId: nextOwnerId } : {}),
+    ...(isAdmin(req) && "ownerName" in payload ? { ownerName: payload.ownerName || "" } : {}),
     ...("status" in payload ? { status: payload.status } : {}),
     ...("tags" in payload ? { tags: Array.isArray(payload.tags) ? payload.tags : [] } : {})
   });
@@ -118,6 +131,10 @@ async function importCustomers(req, res) {
   const normalized = customers.map((c) => ({
     ...c,
     ownerId: assignedOwnerId === null ? String(c?.ownerId || "") : assignedOwnerId,
+    ownerName:
+      assignedOwnerId === null
+        ? String(c?.ownerName || "")
+        : req.user?.email || ""
   }));
 
   const report = await repo.importCustomers(normalized);
@@ -126,6 +143,7 @@ async function importCustomers(req, res) {
 
 module.exports = {
   listCustomers,
+  countCustomers,
   getCustomer,
   createCustomer,
   updateCustomer,

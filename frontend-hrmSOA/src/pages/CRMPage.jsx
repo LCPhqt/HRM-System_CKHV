@@ -3,7 +3,7 @@ import { useAuth } from "../context/AuthContext";
 import AdminSidebar from "../components/AdminSidebar";
 
 function CRMPage() {
-  const { client, token } = useAuth();
+  const { client, token, role } = useAuth();
 
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -21,10 +21,12 @@ function CRMPage() {
     email: "",
     phone: "",
     address: "",
-    industry: "",
     status: "lead",
     tags: "",
+    ownerId: "",
+    ownerName: "",
   });
+  const [employees, setEmployees] = useState([]);
 
   const splitCsvLine = (line) => {
     const out = [];
@@ -198,20 +200,47 @@ function CRMPage() {
   };
 
   useEffect(() => {
+    // Admin: load danh sách nhân viên để gán owner (tùy chọn)
+    if (role === "admin" && token) {
+      client
+        .get("/admin/employees", { headers: { Authorization: `Bearer ${token}` } })
+        .then(({ data }) => setEmployees(Array.isArray(data) ? data : []))
+        .catch((err) => {
+          console.warn("Cannot load employees for owner select", err?.response?.data || err?.message || err);
+          setEmployees([]);
+        });
+    }
+
     if (!token) return;
     fetchCustomers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
+  }, [token, role]);
 
   const filtered = useMemo(() => {
     const list = [...customers];
     if (!filter) return list;
     const q = filter.toLowerCase();
     return list.filter((c) => {
-      const text = `${c.name || ""} ${c.email || ""} ${c.phone || ""} ${c.industry || ""}`.toLowerCase();
+      const ownerId = c.ownerId || c.owner_id || c.owner || "";
+      const ownerText = (() => {
+        const emp = employees.find(
+          (e) => String(e.id || e.userId || e._id || "") === String(ownerId)
+        );
+        const profile = emp?.profile || {};
+        return (
+          emp?.full_name ||
+          emp?.fullName ||
+          profile.full_name ||
+          profile.fullName ||
+          emp?.email ||
+          profile.email ||
+          ""
+        ).toLowerCase();
+      })();
+      const text = `${c.name || ""} ${c.email || ""} ${c.phone || ""} ${ownerText}`.toLowerCase();
       return text.includes(q);
     });
-  }, [customers, filter]);
+  }, [customers, filter, employees]);
 
   const handleCreate = async () => {
     if (!addForm.name.trim()) {
@@ -232,9 +261,10 @@ function CRMPage() {
           email: addForm.email.trim(),
           phone: addForm.phone.trim(),
           address: addForm.address.trim(),
-          industry: addForm.industry.trim(),
           status: addForm.status,
           tags: tagsArr,
+          ...(role === "admin" && addForm.ownerId ? { ownerId: addForm.ownerId } : {}),
+          ...(role === "admin" && addForm.ownerName ? { ownerName: addForm.ownerName } : {}),
         },
         { headers: token ? { Authorization: `Bearer ${token}` } : {} }
       );
@@ -244,9 +274,10 @@ function CRMPage() {
         email: "",
         phone: "",
         address: "",
-        industry: "",
         status: "lead",
         tags: "",
+        ownerId: "",
+        ownerName: "",
       });
       await fetchCustomers();
     } catch (err) {
@@ -357,7 +388,7 @@ function CRMPage() {
                   <th className="text-left px-4 py-3 font-semibold">Tên</th>
                   <th className="text-left px-4 py-3 font-semibold">Email</th>
                   <th className="text-left px-4 py-3 font-semibold">SĐT</th>
-                  <th className="text-left px-4 py-3 font-semibold">Ngành</th>
+                  <th className="text-left px-4 py-3 font-semibold">Người phụ trách</th>
                   <th className="text-left px-4 py-3 font-semibold">Trạng thái</th>
                   <th className="text-right px-4 py-3 font-semibold">Hành động</th>
                 </tr>
@@ -376,7 +407,26 @@ function CRMPage() {
                     <td className="px-4 py-3 font-semibold text-slate-800">{c.name}</td>
                     <td className="px-4 py-3 text-slate-600">{c.email || "-"}</td>
                     <td className="px-4 py-3 text-slate-600">{c.phone || "-"}</td>
-                    <td className="px-4 py-3 text-slate-600">{c.industry || "-"}</td>
+                    <td className="px-4 py-3 text-slate-600">
+                      {(() => {
+                        const ownerId = c.ownerId || c.owner_id || c.owner || "";
+                        if (!ownerId) return role === "admin" ? "Admin" : "Bạn";
+                        if (role !== "admin") return "Bạn";
+                        const emp = employees.find(
+                          (e) => String(e.id || e.userId || e._id || "") === String(ownerId)
+                        );
+                        const profile = emp?.profile || {};
+                        const fullName =
+                          emp?.full_name ||
+                          emp?.fullName ||
+                          profile.full_name ||
+                          profile.fullName ||
+                          emp?.name ||
+                          "";
+                        const email = emp?.email || profile.email || "";
+                        return fullName || email || "Admin";
+                      })()}
+                    </td>
                     <td className="px-4 py-3">
                       <span className={`inline-flex items-center px-2 py-1 rounded-lg text-xs font-semibold ${statusBadge(c.status)}`}>
                         {c.status || "lead"}
@@ -432,6 +482,37 @@ function CRMPage() {
                   </select>
                 </div>
 
+                {role === "admin" && (
+                  <div>
+                    <label className="text-sm text-slate-600 font-medium">Phụ trách (owner)</label>
+                    <select
+                      className="w-full border rounded-lg px-3 py-2 bg-slate-50"
+                      value={addForm.ownerId}
+                      onChange={(e) => setAddForm((p) => ({ ...p, ownerId: e.target.value }))}
+                    >
+                      <option value="">-- Không gán (chỉ admin thấy) --</option>
+                      {employees.map((emp) => {
+                        const profile = emp.profile || {};
+                        const fullName =
+                          emp.full_name ||
+                          emp.fullName ||
+                          profile.full_name ||
+                          profile.fullName ||
+                          emp.name ||
+                          "";
+                        return (
+                          <option key={emp.id || emp.userId || emp._id} value={emp.id || emp.userId || emp._id}>
+                            {fullName || emp.email || "Nhân viên"} ({emp.email || profile.email || ""})
+                          </option>
+                        );
+                      })}
+                    </select>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Để trống: chỉ admin thấy. Chọn nhân viên: họ sẽ thấy khách hàng này.
+                    </p>
+                  </div>
+                )}
+
                 <div>
                   <label className="text-sm text-slate-600 font-medium">Email</label>
                   <input
@@ -459,16 +540,6 @@ function CRMPage() {
                     value={addForm.address}
                     onChange={(e) => setAddForm((p) => ({ ...p, address: e.target.value }))}
                     placeholder="VD: 123 Nguyễn Trãi, Q1..."
-                  />
-                </div>
-
-                <div>
-                  <label className="text-sm text-slate-600 font-medium">Ngành</label>
-                  <input
-                    className="w-full border rounded-lg px-3 py-2 bg-slate-50"
-                    value={addForm.industry}
-                    onChange={(e) => setAddForm((p) => ({ ...p, industry: e.target.value }))}
-                    placeholder="VD: Retail"
                   />
                 </div>
 

@@ -5,16 +5,18 @@ import AdminSidebar from "../components/AdminSidebar";
 import StaffSidebar from "../components/StaffSidebar";
 
 function HomePage() {
-  const { user, role, client } = useAuth();
+  const { user, role, client, token } = useAuth();
   const navigate = useNavigate();
 
   const [employees, setEmployees] = useState([]); // admin only
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [customerCount, setCustomerCount] = useState(0);
 
   //  routes theo role
   const employeesPath = role === "admin" ? "/admin" : "/staff/employees";
   const departmentsPath = role === "admin" ? "/departments" : "/staff/departments";
+  const customersPath = role === "admin" ? "/crm" : "/staff/customers";
 
   useEffect(() => {
     const load = async () => {
@@ -30,16 +32,29 @@ function HomePage() {
         } else {
           setEmployees([]); // staff không dùng list này
         }
+
+        //  CRM: tổng khách hàng (best-effort, không làm crash trang nếu CRM chưa chạy)
+        try {
+          const crmRes = await client.get("/crm/customers/count", {
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+          });
+          const count = Number(crmRes.data?.count ?? 0);
+          setCustomerCount(Number.isFinite(count) ? count : 0);
+        } catch (err) {
+          console.warn("Cannot load customer count", err?.response?.data || err?.message || err);
+          setCustomerCount(0);
+        }
       } catch (err) {
         console.error(err);
         setEmployees([]);
         setDepartments([]);
+        setCustomerCount(0);
       } finally {
         setLoading(false);
       }
     };
     load();
-  }, [client, role]);
+  }, [client, role, token]);
 
   //  totalDepartments luôn lấy từ departments
   const totalDepartments = departments.length;
@@ -99,6 +114,9 @@ function HomePage() {
     [deptStats]
   );
 
+  const formatCount = (v) =>
+    Number(v || 0).toLocaleString("vi-VN", { maximumFractionDigits: 0 });
+
   const formatMoney = (v) =>
     Number(v || 0).toLocaleString("vi-VN", { minimumFractionDigits: 0 }) + " đ";
 
@@ -125,14 +143,14 @@ function HomePage() {
             </p>
           </header>
 
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
             <div
               className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 cursor-pointer hover:border-indigo-200 hover:shadow-md transition"
               onClick={() => navigate(employeesPath)}
             >
               <p className="text-sm text-slate-500">Tổng nhân sự</p>
-              <div className="text-3xl font-bold text-slate-900 mt-2">
-                {totalEmployees}
+              <div className="text-2xl lg:text-3xl font-bold text-slate-900 mt-2 tracking-tight break-all leading-tight">
+                {formatCount(totalEmployees)}
               </div>
               <p className="text-xs text-emerald-600 mt-1">↗ ổn định</p>
             </div>
@@ -142,15 +160,26 @@ function HomePage() {
               onClick={() => navigate(departmentsPath)} //  FIX
             >
               <p className="text-sm text-slate-500">Phòng ban</p>
-              <div className="text-3xl font-bold text-slate-900 mt-2">
-                {totalDepartments}
+              <div className="text-2xl lg:text-3xl font-bold text-slate-900 mt-2 tracking-tight break-all leading-tight">
+                {formatCount(totalDepartments)}
               </div>
               <p className="text-xs text-indigo-600 mt-1">Đang hoạt động</p>
             </div>
 
+            <div
+              className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 cursor-pointer hover:border-indigo-200 hover:shadow-md transition"
+              onClick={() => navigate(customersPath)}
+            >
+              <p className="text-sm text-slate-500">Khách hàng</p>
+              <div className="text-2xl lg:text-3xl font-bold text-slate-900 mt-2 tracking-tight break-all leading-tight">
+                {formatCount(customerCount)}
+              </div>
+              <p className="text-xs text-indigo-600 mt-1">Xem danh sách</p>
+            </div>
+
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
               <p className="text-sm text-slate-500">Quỹ lương tháng (ước tính)</p>
-              <div className="text-3xl font-bold text-slate-900 mt-2">
+              <div className="text-2xl lg:text-3xl font-bold text-slate-900 mt-2 tracking-tight break-words leading-tight">
                 {formatMoney(avgSalary * totalEmployees || 0)}
               </div>
               <p className="text-xs text-amber-600 mt-1">Tính từ lương trung bình</p>
@@ -158,7 +187,7 @@ function HomePage() {
 
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
               <p className="text-sm text-slate-500">Lương trung bình</p>
-              <div className="text-3xl font-bold text-slate-900 mt-2">
+              <div className="text-2xl lg:text-3xl font-bold text-slate-900 mt-2 tracking-tight break-words leading-tight">
                 {formatMoney(avgSalary)}
               </div>
               <p className="text-xs text-emerald-600 mt-1">Trên mỗi nhân viên</p>

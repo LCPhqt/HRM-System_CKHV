@@ -8,6 +8,7 @@ const customerSchema = new mongoose.Schema(
     address: { type: String, default: "" },
     industry: { type: String, default: "" },
     ownerId: { type: String, default: "" },
+    ownerName: { type: String, default: "" },
     status: { type: String, enum: ["active", "inactive", "lead"], default: "lead" },
     tags: { type: [String], default: [] }
   },

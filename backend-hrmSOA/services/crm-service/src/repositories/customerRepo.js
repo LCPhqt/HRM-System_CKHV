@@ -28,6 +28,17 @@ async function listCustomers({ search, status, ownerId, page = 1, limit = 50 } =
   return docs.map(normalize);
 }
 
+async function countCustomers({ search, status, ownerId } = {}) {
+  const q = {};
+  if (status) q.status = status;
+  if (ownerId) q.ownerId = ownerId;
+  if (search) {
+    const rx = new RegExp(escapeRegex(search), "i");
+    q.$or = [{ name: rx }, { email: rx }, { phone: rx }];
+  }
+  return Customer.countDocuments(q);
+}
+
 async function getCustomer(id) {
   const doc = await Customer.findById(id).lean();
   return normalize(doc);
@@ -71,6 +82,7 @@ async function importCustomers(customers = []) {
   for (const raw of customers) {
     const name = String(raw?.name || "").trim();
     const ownerId = String(raw?.ownerId || "").trim();
+    const ownerName = String(raw?.ownerName || "").trim();
     if (!name) {
       errors.push({ row: raw, message: "Missing name" });
       continue;
@@ -90,6 +102,7 @@ async function importCustomers(customers = []) {
       address: String(raw?.address || "").trim(),
       industry: String(raw?.industry || "").trim(),
       ownerId,
+    ownerName,
       status: raw?.status || "lead",
       tags: Array.isArray(raw?.tags) ? raw.tags : []
     });
@@ -146,6 +159,7 @@ async function importCustomers(customers = []) {
 
 module.exports = {
   listCustomers,
+  countCustomers,
   getCustomer,
   findByName,
   findByNameAndOwner,
