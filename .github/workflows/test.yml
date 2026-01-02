@@ -1,0 +1,84 @@
+name: Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  backend-tests:
+    name: Backend Unit Tests
+    runs-on: ubuntu-latest
+    
+    services:
+      mongodb:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.adminCommand(\"ping\")'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: backend-hrmSOA/services/identity-service/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: backend-hrmSOA/services/identity-service
+        run: npm ci
+      
+      - name: Run tests
+        working-directory: backend-hrmSOA/services/identity-service
+        run: npm test
+        env:
+          TEST_MONGO_URI: mongodb://localhost:27017/hrm_identity_test
+          JWT_SECRET: test_secret
+
+  frontend-tests:
+    name: Frontend UI Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: frontend-hrmSOA/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: frontend-hrmSOA
+        run: npm ci
+      
+      - name: Install Chrome
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y google-chrome-stable
+      
+      - name: Start frontend server
+        working-directory: frontend-hrmSOA
+        run: |
+          npm run build
+          npm run preview &
+          sleep 5
+      
+      - name: Run UI tests
+        working-directory: frontend-hrmSOA
+        run: npm run test:ui
+        env:
+          TEST_BASE_URL: http://localhost:4173
+          HEADLESS: 'true'
+          TEST_USER_EMAIL: admin@gmail.com
+          TEST_USER_PASSWORD: admin123
+
