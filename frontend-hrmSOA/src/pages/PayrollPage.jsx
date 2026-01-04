@@ -228,11 +228,11 @@ function PayrollPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-900 flex">
+    <div className="h-screen bg-slate-100 text-slate-900 flex overflow-hidden">
       <AdminSidebar />
 
       {/* Main */}
-      <main className="flex-1 p-8 space-y-6">
+      <main className="flex-1 p-8 space-y-6 overflow-y-auto">
         <header className="flex items-center justify-between">
           <div>
             <p className="text-sm text-slate-500">Lương thưởng</p>
@@ -256,13 +256,13 @@ function PayrollPage() {
             </p>
           </div>
           <div className="flex gap-3">
-              <button
-                onClick={handleCreateRun}
-                disabled={creatingRun}
-                className="inline-flex items-center gap-2 bg-emerald-500 text-white font-semibold px-4 py-3 rounded-xl shadow-lg shadow-emerald-900/20 hover:bg-emerald-400 disabled:opacity-60"
-              >
-                ➕ Tạo kỳ lương hiện tại
-              </button>
+            <button
+              onClick={handleCreateRun}
+              disabled={creatingRun}
+              className="inline-flex items-center gap-2 bg-emerald-500 text-white font-semibold px-4 py-3 rounded-xl shadow-lg shadow-emerald-900/20 hover:bg-emerald-400 disabled:opacity-60"
+            >
+              ➕ Tạo kỳ lương hiện tại
+            </button>
             <button
               onClick={handleExport}
               disabled={!selectedRunId || actionLoading === 'export'}
@@ -291,11 +291,10 @@ function PayrollPage() {
                 setSelectedRunId(run.id);
                 setShowQuickAddRunId(run.id);
               }}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-semibold transition relative ${
-                selectedRunId === run.id
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-semibold transition relative ${selectedRunId === run.id
                   ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-200'
                   : 'bg-slate-50 text-slate-700 border-slate-200 hover:border-indigo-200'
-              }`}
+                }`}
             >
               🕒 {run.period}
               <span
@@ -303,11 +302,10 @@ function PayrollPage() {
                   e.stopPropagation();
                   handleDeleteRun(run.id);
                 }}
-                className={`ml-1 inline-flex items-center justify-center h-5 w-5 rounded-full text-xs font-bold ${
-                  selectedRunId === run.id
+                className={`ml-1 inline-flex items-center justify-center h-5 w-5 rounded-full text-xs font-bold ${selectedRunId === run.id
                     ? 'bg-white/20 text-white hover:bg-white/30'
                     : 'bg-slate-200 text-slate-600 hover:bg-slate-300'
-                }`}
+                  }`}
                 title="Xóa kỳ lương"
               >
                 ✕
@@ -470,7 +468,7 @@ function PayrollPage() {
                           (emp.id || emp.userId || emp._id) === val || (emp.email && emp.email === quickAddForm.email)
                       );
                       if (found) {
-                      setQuickAddSelected(found);
+                        setQuickAddSelected(found);
                         setQuickAddForm((p) => ({
                           ...p,
                           base_salary: found.profile?.salary ?? found.salary ?? 0,
@@ -496,7 +494,7 @@ function PayrollPage() {
                           emp.email === val || (emp.id || emp.userId || emp._id) === quickAddForm.user_id
                       );
                       if (found) {
-                      setQuickAddSelected(found);
+                        setQuickAddSelected(found);
                         setQuickAddForm((p) => ({
                           ...p,
                           base_salary: found.profile?.salary ?? found.salary ?? 0,

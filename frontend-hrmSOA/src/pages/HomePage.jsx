@@ -127,23 +127,29 @@ function HomePage() {
   });
 
   return (
-    <div className="min-h-screen bg-white text-slate-900 flex">
+    <div className="h-screen bg-white text-slate-900 flex overflow-hidden">
       {role === "admin" ? <AdminSidebar /> : <StaffSidebar />}
 
       {/* Main */}
-      <main className="flex-1 bg-slate-50">
+      <main className="flex-1 bg-slate-50 overflow-y-auto">
         <div className="px-10 pt-8 pb-4 space-y-6">
-          <header className="bg-gradient-to-r from-indigo-700 to-indigo-500 text-white rounded-3xl p-8 shadow-xl">
+          <header className="bg-gradient-to-r from-indigo-700 via-purple-600 to-indigo-500 text-white rounded-3xl p-8 shadow-xl">
             <p className="text-sm opacity-90 mb-1">
               Xin chào, {role === "admin" ? "Admin" : user?.email}
             </p>
-            <h1 className="text-3xl font-bold">Hệ thống đang hoạt động ổn định.</h1>
+            <h1 className="text-3xl font-bold">Hệ thống HRM & CRM</h1>
             <p className="mt-2 text-sm text-indigo-100">
-              Dưới đây là báo cáo tổng quan về tình hình nhân sự của công ty trong tháng này.
+              Tổng quan về tình hình nhân sự và quản lý khách hàng của công ty.
             </p>
           </header>
 
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+          {/* HRM Section */}
+          <div className="mb-2">
+            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+              <span className="text-indigo-500">📊</span> Quản lý Nhân sự (HRM)
+            </h2>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <div
               className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 cursor-pointer hover:border-indigo-200 hover:shadow-md transition"
               onClick={() => navigate(employeesPath)}
@@ -157,24 +163,13 @@ function HomePage() {
 
             <div
               className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 cursor-pointer hover:border-indigo-200 hover:shadow-md transition"
-              onClick={() => navigate(departmentsPath)} //  FIX
+              onClick={() => navigate(departmentsPath)}
             >
               <p className="text-sm text-slate-500">Phòng ban</p>
               <div className="text-2xl lg:text-3xl font-bold text-slate-900 mt-2 tracking-tight break-all leading-tight">
                 {formatCount(totalDepartments)}
               </div>
               <p className="text-xs text-indigo-600 mt-1">Đang hoạt động</p>
-            </div>
-
-            <div
-              className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 cursor-pointer hover:border-indigo-200 hover:shadow-md transition"
-              onClick={() => navigate(customersPath)}
-            >
-              <p className="text-sm text-slate-500">Khách hàng</p>
-              <div className="text-2xl lg:text-3xl font-bold text-slate-900 mt-2 tracking-tight break-all leading-tight">
-                {formatCount(customerCount)}
-              </div>
-              <p className="text-xs text-indigo-600 mt-1">Xem danh sách</p>
             </div>
 
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
@@ -191,6 +186,41 @@ function HomePage() {
                 {formatMoney(avgSalary)}
               </div>
               <p className="text-xs text-emerald-600 mt-1">Trên mỗi nhân viên</p>
+            </div>
+          </div>
+
+          {/* CRM Section */}
+          <div className="mt-6 mb-2">
+            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+              <span className="text-purple-500">🤝</span> Quản lý Khách hàng (CRM)
+            </h2>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <div
+              className="bg-gradient-to-br from-purple-50 to-white rounded-2xl border border-purple-200 shadow-sm p-6 cursor-pointer hover:border-purple-300 hover:shadow-md transition"
+              onClick={() => navigate(customersPath)}
+            >
+              <p className="text-sm text-purple-600">Tổng khách hàng</p>
+              <div className="text-2xl lg:text-3xl font-bold text-slate-900 mt-2 tracking-tight break-all leading-tight">
+                {formatCount(customerCount)}
+              </div>
+              <p className="text-xs text-purple-500 mt-1">Xem danh sách →</p>
+            </div>
+
+            <div className="bg-gradient-to-br from-emerald-50 to-white rounded-2xl border border-emerald-200 shadow-sm p-6">
+              <p className="text-sm text-emerald-600">Khách hàng mới</p>
+              <div className="text-2xl lg:text-3xl font-bold text-slate-900 mt-2 tracking-tight break-all leading-tight">
+                —
+              </div>
+              <p className="text-xs text-emerald-500 mt-1">Tháng này</p>
+            </div>
+
+            <div className="bg-gradient-to-br from-amber-50 to-white rounded-2xl border border-amber-200 shadow-sm p-6">
+              <p className="text-sm text-amber-600">Đang chờ xử lý</p>
+              <div className="text-2xl lg:text-3xl font-bold text-slate-900 mt-2 tracking-tight break-all leading-tight">
+                —
+              </div>
+              <p className="text-xs text-amber-500 mt-1">Yêu cầu mới</p>
             </div>
           </div>
 

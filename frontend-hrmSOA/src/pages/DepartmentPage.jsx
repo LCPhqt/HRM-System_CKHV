@@ -157,11 +157,11 @@ function DepartmentPage() {
   });
 
   return (
-    <div className="min-h-screen bg-white text-slate-900 flex">
+    <div className="h-screen bg-white text-slate-900 flex overflow-hidden">
       <AdminSidebar />
 
       {/* Main */}
-      <main className="flex-1 bg-slate-50">
+      <main className="flex-1 bg-slate-50 overflow-y-auto">
         <div className="px-10 pt-8 pb-4 flex items-center justify-between">
           <div>
             <p className="text-sm text-slate-500 font-medium">Phòng ban</p>

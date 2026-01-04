@@ -27,6 +27,7 @@ export default function StaffCustomersPage() {
   const [importPreview, setImportPreview] = useState([]);
   const [importReport, setImportReport] = useState(null);
   const [importErr, setImportErr] = useState("");
+  const [selectedIds, setSelectedIds] = useState(new Set());
 
   const authHeaders = useMemo(
     () => (token ? { Authorization: `Bearer ${token}` } : {}),
@@ -147,11 +148,67 @@ export default function StaffCustomersPage() {
     if (!window.confirm(`Xóa khách hàng "${c.name}"?`)) return;
     try {
       await client.delete(`/crm/customers/${id}`, { headers: authHeaders });
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
       await fetchCustomers();
       await fetchCustomerCount();
     } catch (err) {
       console.error(err);
       alert(err.response?.data?.message || err.message || "Xóa khách hàng thất bại");
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedIds.size === 0) return;
+    if (!window.confirm(`Xóa ${selectedIds.size} khách hàng đã chọn?`)) return;
+    try {
+      const ids = Array.from(selectedIds);
+      await Promise.all(
+        ids.map((id) => client.delete(`/crm/customers/${id}`, { headers: authHeaders }))
+      );
+      setSelectedIds(new Set());
+      await fetchCustomers();
+      await fetchCustomerCount();
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || err.message || "Xóa thất bại");
+    }
+  };
+
+  const handleDeleteAll = async () => {
+    if (filtered.length === 0) return;
+    if (!window.confirm(`Xóa TẤT CẢ ${filtered.length} khách hàng? Hành động này không thể hoàn tác!`)) return;
+    try {
+      const ids = filtered.map((c) => c.id || c._id).filter(Boolean);
+      await Promise.all(
+        ids.map((id) => client.delete(`/crm/customers/${id}`, { headers: authHeaders }))
+      );
+      setSelectedIds(new Set());
+      await fetchCustomers();
+      await fetchCustomerCount();
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || err.message || "Xóa thất bại");
+    }
+  };
+
+  const toggleSelect = (id) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filtered.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filtered.map((c) => c.id || c._id)));
     }
   };
 
@@ -299,10 +356,10 @@ export default function StaffCustomersPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white text-slate-900 flex">
+    <div className="h-screen bg-white text-slate-900 flex overflow-hidden">
       <StaffSidebar />
 
-      <main className="flex-1 bg-slate-50 p-8 space-y-6">
+      <main className="flex-1 bg-slate-50 p-8 space-y-6 overflow-y-auto">
         <header className="flex items-center justify-between">
           <div>
             <p className="text-sm text-slate-500">Khách hàng</p>
@@ -358,20 +415,52 @@ export default function StaffCustomersPage() {
         </div>
 
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="p-4 border-b border-slate-200 flex items-center justify-between">
+          <div className="p-4 border-b border-slate-200 flex items-center justify-between flex-wrap gap-3">
             <div className="font-semibold text-slate-800">
               Danh sách{" "}
               <span className="text-slate-500 text-sm font-normal">
                 ({customerCount || filtered.length})
               </span>
+              {selectedIds.size > 0 && (
+                <span className="ml-2 text-indigo-600 text-sm font-normal">
+                  • Đã chọn {selectedIds.size}
+                </span>
+              )}
             </div>
-            {loading && <div className="text-sm text-slate-500">Đang tải...</div>}
+            <div className="flex items-center gap-2">
+              {loading && <div className="text-sm text-slate-500">Đang tải...</div>}
+              {selectedIds.size > 0 && (
+                <button
+                  onClick={handleDeleteSelected}
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-500 text-white hover:bg-rose-600"
+                >
+                  🗑 Xóa đã chọn ({selectedIds.size})
+                </button>
+              )}
+              {filtered.length > 0 && (
+                <button
+                  onClick={handleDeleteAll}
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-100 text-rose-700 hover:bg-rose-200 border border-rose-200"
+                >
+                  Xóa tất cả
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="overflow-auto">
             <table className="w-full text-sm">
               <thead className="bg-slate-50 text-slate-600">
                 <tr>
+                  <th className="px-4 py-3 w-10">
+                    <input
+                      type="checkbox"
+                      checked={filtered.length > 0 && selectedIds.size === filtered.length}
+                      onChange={toggleSelectAll}
+                      className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                    />
+                  </th>
+                  <th className="text-center px-2 py-3 font-semibold w-12">STT</th>
                   <th className="text-left px-4 py-3 font-semibold">Tên</th>
                   <th className="text-left px-4 py-3 font-semibold">Email</th>
                   <th className="text-left px-4 py-3 font-semibold">SĐT</th>
@@ -383,37 +472,49 @@ export default function StaffCustomersPage() {
               <tbody>
                 {!loading && filtered.length === 0 && (
                   <tr>
-                    <td className="px-4 py-6 text-slate-500" colSpan={6}>
+                    <td className="px-4 py-6 text-slate-500" colSpan={8}>
                       Chưa có khách hàng nào.
                     </td>
                   </tr>
                 )}
 
-                {filtered.map((c) => (
-                  <tr key={c.id || c._id} className="border-t border-slate-100 hover:bg-slate-50">
-                    <td className="px-4 py-3 font-semibold text-slate-800">{c.name}</td>
-                    <td className="px-4 py-3 text-slate-600">{c.email || "-"}</td>
-                    <td className="px-4 py-3 text-slate-600">{c.phone || "-"}</td>
-                    <td className="px-4 py-3 text-slate-600">{c.industry || "-"}</td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`inline-flex items-center px-2 py-1 rounded-lg text-xs font-semibold ${statusBadge(
-                          c.status
-                        )}`}
-                      >
-                        {c.status || "lead"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <button
-                        onClick={() => handleDelete(c)}
-                        className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-100"
-                      >
-                        Xóa
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {filtered.map((c, index) => {
+                  const cId = c.id || c._id;
+                  return (
+                    <tr key={cId} className={`border-t border-slate-100 hover:bg-slate-50 ${selectedIds.has(cId) ? "bg-indigo-50" : ""}`}>
+                      <td className="px-4 py-3">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(cId)}
+                          onChange={() => toggleSelect(cId)}
+                          className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                        />
+                      </td>
+                      <td className="text-center px-2 py-3 text-slate-500 font-medium">{index + 1}</td>
+                      <td className="px-4 py-3 font-semibold text-slate-800">{c.name}</td>
+                      <td className="px-4 py-3 text-slate-600">{c.email || "-"}</td>
+                      <td className="px-4 py-3 text-slate-600">{c.phone || "-"}</td>
+                      <td className="px-4 py-3 text-slate-600">{c.industry || "-"}</td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`inline-flex items-center px-2 py-1 rounded-lg text-xs font-semibold ${statusBadge(
+                            c.status
+                          )}`}
+                        >
+                          {c.status || "lead"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          onClick={() => handleDelete(c)}
+                          className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-100"
+                        >
+                          Xóa
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

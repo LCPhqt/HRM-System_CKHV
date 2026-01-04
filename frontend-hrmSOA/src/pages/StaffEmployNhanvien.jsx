@@ -46,10 +46,10 @@ export default function StaffEmployNhanvien() {
   const st = statusLabel(status);
 
   return (
-    <div className="min-h-screen bg-white text-slate-900 flex">
+    <div className="h-screen bg-white text-slate-900 flex overflow-hidden">
       <StaffSidebar />
 
-      <main className="flex-1 bg-slate-50">
+      <main className="flex-1 bg-slate-50 overflow-y-auto">
         <div className="px-10 pt-8 pb-4">
           <p className="text-sm text-slate-500 font-medium">Nhân viên</p>
           <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900">
@@ -111,14 +111,14 @@ export default function StaffEmployNhanvien() {
 
                 <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5">
                   <p className="text-xs uppercase tracking-wider text-slate-500 font-semibold">
-                    THÔNG TIN CÁ NHÂN ĐẦY ĐỦ  
+                    THÔNG TIN CÁ NHÂN ĐẦY ĐỦ
                   </p>
                   <p className="text-sm text-slate-600 mt-2">Bạn chỉ được xem tại đây.</p>
                   <button
                     onClick={() => navigate("/staff/profile")}
                     className="mt-3 px-4 py-2 rounded-xl border border-slate-300 text-slate-800 font-semibold hover:bg-white"
                   >
-                    Xem hồ sơ 
+                    Xem hồ sơ
                   </button>
                 </div>
               </div>

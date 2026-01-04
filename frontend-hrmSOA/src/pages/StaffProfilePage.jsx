@@ -6,9 +6,9 @@ export default function StaffProfilePage() {
   const [editMode, setEditMode] = useState(false);
 
   return (
-    <div className="min-h-screen bg-slate-100 flex">
+    <div className="h-screen bg-slate-100 flex overflow-hidden">
       <StaffSidebar />
-      <main className="flex-1">
+      <main className="flex-1 overflow-y-auto">
         <ProfilePage
           readOnly={!editMode}
           actionSlot={
