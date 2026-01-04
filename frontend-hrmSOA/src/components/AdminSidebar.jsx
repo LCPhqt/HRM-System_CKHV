@@ -11,6 +11,7 @@ export default function AdminSidebar() {
     { label: "Tổng quan", icon: "📊", path: "/home" },
     { label: "Nhân viên", icon: "👥", path: "/admin" },
     { label: "Khách hàng", icon: "🤝", path: "/crm" },
+    { label: "Lịch sử khách hàng", icon: "🕒", path: "/crm/history" },
     { label: "Phòng ban", icon: "🏢", path: "/departments" },
     { label: "Lương thưởng", icon: "💰", path: "/payroll" },
   ];

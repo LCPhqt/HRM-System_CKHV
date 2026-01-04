@@ -42,6 +42,14 @@ export default function StaffCustomersPage() {
     tags: "",
   });
 
+  const [logModal, setLogModal] = useState({
+    open: false,
+    loading: false,
+    items: [],
+    customer: null,
+    error: "",
+  });
+
   const authHeaders = useMemo(
     () => (token ? { Authorization: `Bearer ${token}` } : {}),
     [token]
@@ -80,6 +88,27 @@ export default function StaffCustomersPage() {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const openLogs = async (customer) => {
+    const id = customer?.id || customer?._id;
+    if (!id) return;
+    setLogModal((p) => ({ ...p, open: true, loading: true, customer, error: "", items: [] }));
+    try {
+      const { data } = await client.get(`/crm/customers/${id}/logs`, {
+        params: { page: 1, limit: 50 },
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      setLogModal((p) => ({ ...p, loading: false, items: Array.isArray(data) ? data : [] }));
+    } catch (err) {
+      console.error(err);
+      setLogModal((p) => ({
+        ...p,
+        loading: false,
+        items: [],
+        error: err?.response?.data?.message || err?.message || "Không tải được nhật ký",
+      }));
     }
   };
 
@@ -618,6 +647,12 @@ export default function StaffCustomersPage() {
                         >
                           Xóa
                         </button>
+                        <button
+                          onClick={() => openLogs(c)}
+                          className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200"
+                        >
+                          Nhật ký
+                        </button>
                       </td>
                     </tr>
                   );
@@ -830,6 +865,83 @@ export default function StaffCustomersPage() {
                 >
                   Cập nhật
                 </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Log modal */}
+        {logModal.open && (
+          <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl p-6 space-y-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-xl font-bold text-slate-800">Nhật ký khách hàng</h3>
+                  <p className="text-sm text-slate-500">
+                    {logModal.customer?.name || "Khách hàng"} • Hiển thị tối đa 50 log gần nhất
+                  </p>
+                </div>
+                <button
+                  className="text-slate-500 hover:text-slate-800"
+                  onClick={() => setLogModal((p) => ({ ...p, open: false }))}
+                >
+                  ✕
+                </button>
+              </div>
+
+              {logModal.error && (
+                <div className="bg-rose-50 text-rose-700 text-sm px-3 py-2 rounded-lg border border-rose-100">
+                  {logModal.error}
+                </div>
+              )}
+
+              <div className="max-h-[460px] overflow-y-auto divide-y divide-slate-100">
+                {logModal.loading && <p className="text-sm text-slate-500 py-2">Đang tải...</p>}
+                {!logModal.loading && logModal.items.length === 0 && (
+                  <p className="text-sm text-slate-500 py-2">Chưa có nhật ký.</p>
+                )}
+                {logModal.items.map((log) => (
+                  <div key={log.id} className="py-3 flex flex-col gap-1">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-sm text-slate-700">
+                        <span className="font-semibold text-indigo-600">{log.actorEmail || "N/A"}</span>
+                        <span className="text-slate-400">•</span>
+                        <span className="capitalize font-semibold">{log.action}</span>
+                      </div>
+                      <div className="text-xs text-slate-500">
+                        {log.createdAt
+                          ? new Date(log.createdAt).toLocaleString("vi-VN")
+                          : new Date(log.updatedAt || "").toLocaleString("vi-VN")}
+                      </div>
+                    </div>
+                    {log.meta && (
+                      <div className="text-xs text-slate-500">
+                        {log.meta.created !== undefined && (
+                          <span className="mr-2">Tạo: {log.meta.created}</span>
+                        )}
+                        {log.meta.skipped !== undefined && (
+                          <span className="mr-2">Bỏ qua: {log.meta.skipped}</span>
+                        )}
+                        {log.meta.errors !== undefined && <span>Lỗi: {log.meta.errors}</span>}
+                      </div>
+                    )}
+                    <div className="text-xs text-slate-500 break-words">
+                      {log.before && (
+                        <span className="mr-2">
+                          Trước: <code className="bg-slate-50 px-1 rounded">{JSON.stringify(log.before)}</code>
+                        </span>
+                      )}
+                      {log.after && (
+                        <span>
+                          Sau: <code className="bg-slate-50 px-1 rounded">{JSON.stringify(log.after)}</code>
+                        </span>
+                      )}
+                      {!log.before && !log.after && !log.meta && (
+                        <span className="text-slate-400">Không có chi tiết.</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>

@@ -10,7 +10,11 @@ const customerSchema = new mongoose.Schema(
     ownerId: { type: String, default: "" },
     ownerName: { type: String, default: "" },
     status: { type: String, enum: ["active", "inactive", "lead"], default: "lead" },
-    tags: { type: [String], default: [] }
+  tags: { type: [String], default: [] },
+  deleted: { type: Boolean, default: false },
+  deletedAt: { type: Date, default: null },
+  deletedBy: { type: String, default: "" },
+  deletedByEmail: { type: String, default: "" }
   },
   { timestamps: true }
 );

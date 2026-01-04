@@ -8,7 +8,10 @@ const {
   updateCustomer,
   deleteCustomer,
   importCustomers,
-  statsCustomers
+  statsCustomers,
+  listCustomerLogs,
+  listDeletedCustomers,
+  restoreCustomer
 } = require("../controllers/customerController");
 
 const router = express.Router();
@@ -19,7 +22,10 @@ router.use(requireAuth);
 router.get("/", listCustomers);
 router.get("/count", countCustomers);
 router.get("/stats", statsCustomers);
+router.get("/deleted", listDeletedCustomers);
 router.post("/import", importCustomers);
+router.post("/:id/restore", restoreCustomer);
+router.get("/:id/logs", listCustomerLogs);
 router.get("/:id", getCustomer);
 
 // Write: staff quản lý khách hàng của chính mình; admin quản lý tất cả

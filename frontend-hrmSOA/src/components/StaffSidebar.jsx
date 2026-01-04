@@ -12,6 +12,7 @@ export default function StaffSidebar() {
     { label: "Tổng quan", icon: "📊", path: "/home" },
     { label: "Hồ sơ", icon: "👥", path: "/staff/employees" },
     { label: "Khách hàng", icon: "🤝", path: "/staff/customers" },
+    { label: "Lịch sử khách hàng", icon: "🕒", path: "/staff/customers/history" },
     { label: "Phòng ban", icon: "🏢", path: "/staff/departments" },
   ];
 

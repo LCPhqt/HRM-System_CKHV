@@ -13,6 +13,7 @@ function normalize(doc) {
 
 async function listCustomers({ search, status, ownerId, page = 1, limit = 50 } = {}) {
   const q = {};
+  q.deleted = false;
   if (status) q.status = status;
   if (ownerId) q.ownerId = ownerId;
   if (search) {
@@ -30,6 +31,7 @@ async function listCustomers({ search, status, ownerId, page = 1, limit = 50 } =
 
 async function countCustomers({ search, status, ownerId } = {}) {
   const q = {};
+  q.deleted = false;
   if (status) q.status = status;
   if (ownerId) q.ownerId = ownerId;
   if (search) {
@@ -40,7 +42,7 @@ async function countCustomers({ search, status, ownerId } = {}) {
 }
 
 async function statusStats({ ownerId } = {}) {
-  const match = {};
+  const match = { deleted: false };
   if (ownerId) match.ownerId = ownerId;
 
   const raw = await Customer.aggregate([
@@ -81,6 +83,27 @@ async function findByNameAndOwner(name, ownerId) {
   return normalize(doc);
 }
 
+async function listDeletedCustomers({ ownerId, page = 1, limit = 50 } = {}) {
+  const q = { deleted: true };
+  if (ownerId) q.ownerId = ownerId;
+
+  const safePage = Math.max(1, Number(page) || 1);
+  const safeLimit = Math.min(200, Math.max(1, Number(limit) || 50));
+  const skip = (safePage - 1) * safeLimit;
+
+  const docs = await Customer.find(q).sort({ deletedAt: -1 }).skip(skip).limit(safeLimit).lean();
+  return docs.map(normalize);
+}
+
+async function restoreCustomer(id) {
+  const updated = await Customer.findByIdAndUpdate(
+    id,
+    { $set: { deleted: false, deletedAt: null, deletedBy: "", deletedByEmail: "" } },
+    { new: true }
+  ).lean();
+  return normalize(updated);
+}
+
 async function createCustomer(payload) {
   const created = await Customer.create(payload);
   // Convert to lean-like object with id
@@ -93,7 +116,11 @@ async function updateCustomer(id, payload) {
 }
 
 async function deleteCustomer(id) {
-  const deleted = await Customer.findByIdAndDelete(id).lean();
+  const deleted = await Customer.findByIdAndUpdate(
+    id,
+    { $set: { deleted: true, deletedAt: new Date() } },
+    { new: true }
+  ).lean();
   return normalize(deleted);
 }
 
@@ -195,6 +222,8 @@ module.exports = {
   deleteCustomer,
   importCustomers,
   statusStats,
+  listDeletedCustomers,
+  restoreCustomer
 };
 
 
