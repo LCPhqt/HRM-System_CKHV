@@ -29,6 +29,19 @@ export default function StaffCustomersPage() {
   const [importErr, setImportErr] = useState("");
   const [selectedIds, setSelectedIds] = useState(new Set());
 
+  // Edit customer state
+  const [editing, setEditing] = useState(false);
+  const [editForm, setEditForm] = useState({
+    id: "",
+    name: "",
+    email: "",
+    phone: "",
+    address: "",
+    industry: "",
+    status: "lead",
+    tags: "",
+  });
+
   const authHeaders = useMemo(
     () => (token ? { Authorization: `Bearer ${token}` } : {}),
     [token]
@@ -215,6 +228,64 @@ export default function StaffCustomersPage() {
     } catch (err) {
       console.error(err);
       alert(err.response?.data?.message || err.message || "Xóa thất bại");
+    }
+  };
+
+  const handleEdit = (customer) => {
+    const tags = Array.isArray(customer.tags) ? customer.tags.join(", ") : (customer.tags || "");
+    setEditForm({
+      id: customer.id || customer._id,
+      name: customer.name || "",
+      email: customer.email || "",
+      phone: customer.phone || "",
+      address: customer.address || "",
+      industry: customer.industry || "",
+      status: customer.status || "lead",
+      tags: tags,
+    });
+    setEditing(true);
+  };
+
+  const handleUpdate = async () => {
+    if (!editForm.name.trim()) {
+      alert("Tên khách hàng là bắt buộc");
+      return;
+    }
+
+    const tagsArr = String(editForm.tags || "")
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean);
+
+    try {
+      await client.put(
+        `/crm/customers/${editForm.id}`,
+        {
+          name: editForm.name.trim(),
+          email: editForm.email.trim(),
+          phone: editForm.phone.trim(),
+          address: editForm.address.trim(),
+          industry: editForm.industry.trim(),
+          status: editForm.status,
+          tags: tagsArr,
+        },
+        { headers: authHeaders }
+      );
+      setEditing(false);
+      setEditForm({
+        id: "",
+        name: "",
+        email: "",
+        phone: "",
+        address: "",
+        industry: "",
+        status: "lead",
+        tags: "",
+      });
+      await fetchCustomers();
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || err.message || "Cập nhật khách hàng thất bại");
     }
   };
 
@@ -534,7 +605,13 @@ export default function StaffCustomersPage() {
                           {c.status || "lead"}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-4 py-3 text-right space-x-2">
+                        <button
+                          onClick={() => handleEdit(c)}
+                          className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-100"
+                        >
+                          Sửa
+                        </button>
                         <button
                           onClick={() => handleDelete(c)}
                           className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-100"
@@ -648,6 +725,110 @@ export default function StaffCustomersPage() {
                   onClick={handleCreate}
                 >
                   Lưu
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Edit modal */}
+        {editing && (
+          <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-slate-800">Sửa thông tin khách hàng</h3>
+                <button className="text-slate-500 hover:text-slate-800" onClick={() => setEditing(false)}>
+                  ✕
+                </button>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm text-slate-600 font-medium">Tên khách hàng *</label>
+                  <input
+                    className="w-full border rounded-lg px-3 py-2 bg-slate-50"
+                    value={editForm.name}
+                    onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))}
+                    placeholder="VD: Công ty ABC"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm text-slate-600 font-medium">Trạng thái</label>
+                  <select
+                    className="w-full border rounded-lg px-3 py-2 bg-slate-50"
+                    value={editForm.status}
+                    onChange={(e) => setEditForm((p) => ({ ...p, status: e.target.value }))}
+                  >
+                    <option value="lead">lead</option>
+                    <option value="active">active</option>
+                    <option value="inactive">inactive</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-sm text-slate-600 font-medium">Email</label>
+                  <input
+                    className="w-full border rounded-lg px-3 py-2 bg-slate-50"
+                    value={editForm.email}
+                    onChange={(e) => setEditForm((p) => ({ ...p, email: e.target.value }))}
+                    placeholder="contact@abc.com"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm text-slate-600 font-medium">Số điện thoại</label>
+                  <input
+                    className="w-full border rounded-lg px-3 py-2 bg-slate-50"
+                    value={editForm.phone}
+                    onChange={(e) => setEditForm((p) => ({ ...p, phone: e.target.value }))}
+                    placeholder="090..."
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm text-slate-600 font-medium">Ngành nghề</label>
+                  <input
+                    className="w-full border rounded-lg px-3 py-2 bg-slate-50"
+                    value={editForm.industry}
+                    onChange={(e) => setEditForm((p) => ({ ...p, industry: e.target.value }))}
+                    placeholder="VD: Retail, IT, ..."
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="text-sm text-slate-600 font-medium">Địa chỉ</label>
+                  <input
+                    className="w-full border rounded-lg px-3 py-2 bg-slate-50"
+                    value={editForm.address}
+                    onChange={(e) => setEditForm((p) => ({ ...p, address: e.target.value }))}
+                    placeholder="VD: 123 Nguyễn Trãi, Q1..."
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="text-sm text-slate-600 font-medium">Tags (phân tách bằng dấu ,)</label>
+                  <input
+                    className="w-full border rounded-lg px-3 py-2 bg-slate-50"
+                    value={editForm.tags}
+                    onChange={(e) => setEditForm((p) => ({ ...p, tags: e.target.value }))}
+                    placeholder="vip, hanoi, ..."
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  className="px-4 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 font-semibold hover:bg-slate-50"
+                  onClick={() => setEditing(false)}
+                >
+                  Hủy
+                </button>
+                <button
+                  className="px-4 py-2 rounded-xl bg-indigo-600 text-white font-semibold hover:bg-indigo-700"
+                  onClick={handleUpdate}
+                >
+                  Cập nhật
                 </button>
               </div>
             </div>
