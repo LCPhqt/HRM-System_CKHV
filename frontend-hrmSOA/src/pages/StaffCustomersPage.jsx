@@ -80,6 +80,29 @@ export default function StaffCustomersPage() {
     }
   };
 
+  const exportToExcel = async () => {
+    try {
+      const xlsx = await import("xlsx");
+      const rows = (customers || []).map((c, idx) => ({
+        STT: idx + 1,
+        "Tên khách hàng": c.name || "",
+        Email: c.email || "",
+        "Số điện thoại": c.phone || "",
+        "Địa chỉ": c.address || "",
+        "Người phụ trách": c.ownerName || "",
+        "Trạng thái": c.status || "",
+        Tags: Array.isArray(c.tags) ? c.tags.join(";") : c.tags || ""
+      }));
+      const ws = xlsx.utils.json_to_sheet(rows);
+      const wb = xlsx.utils.book_new();
+      xlsx.utils.book_append_sheet(wb, ws, "Customers");
+      xlsx.writeFile(wb, `customers_staff_${Date.now()}.xlsx`);
+    } catch (err) {
+      console.error(err);
+      alert("Xuất Excel thất bại. Vui lòng thử lại.");
+    }
+  };
+
   useEffect(() => {
     if (!token) return;
     fetchCustomers();
@@ -347,6 +370,13 @@ export default function StaffCustomersPage() {
             className="px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 shadow-sm hover:border-indigo-200"
           >
             ⬆ Nhập file
+          </button>
+
+          <button
+            onClick={exportToExcel}
+            className="px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 shadow-sm hover:border-indigo-200"
+          >
+            ⬇ Xuất Excel
           </button>
 
           <button
