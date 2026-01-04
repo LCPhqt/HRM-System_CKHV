@@ -285,7 +285,7 @@ function HomePage() {
                 )}
               </div>
 
-              {/* Biểu đồ thống kê khách hàng */}
+              {/* Biểu đồ tròn thống kê khách hàng */}
               <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
                 <div className="flex items-center justify-between mb-4">
                   <div>
@@ -301,28 +301,102 @@ function HomePage() {
                     Xem chi tiết <span className="text-base">↗</span>
                   </span>
                 </div>
-                <div className="relative h-64 bg-gradient-to-br from-purple-50 to-white border border-purple-100 rounded-2xl p-4 flex flex-col justify-center">
-                  {/* Số tổng khách hàng lớn */}
-                  <div className="text-center mb-6">
-                    <div className="text-5xl font-extrabold text-purple-600 tracking-tight">
-                      {formatCount(customerCount)}
-                    </div>
-                    <p className="text-sm text-slate-500 mt-1">Tổng khách hàng</p>
+                <div className="relative h-64 bg-gradient-to-br from-purple-50 to-white border border-purple-100 rounded-2xl p-4 flex items-center justify-center gap-6">
+                  {/* Pie Chart SVG */}
+                  <div className="relative">
+                    <svg width="160" height="160" viewBox="0 0 160 160">
+                      {/* Background circle */}
+                      <circle
+                        cx="80"
+                        cy="80"
+                        r="60"
+                        fill="none"
+                        stroke="#e2e8f0"
+                        strokeWidth="24"
+                      />
+                      {/* Active segment (green) - 40% */}
+                      <circle
+                        cx="80"
+                        cy="80"
+                        r="60"
+                        fill="none"
+                        stroke="#10b981"
+                        strokeWidth="24"
+                        strokeDasharray="150.8 226.2"
+                        strokeDashoffset="0"
+                        transform="rotate(-90 80 80)"
+                        className="transition-all duration-500"
+                      />
+                      {/* Lead segment (amber) - 35% */}
+                      <circle
+                        cx="80"
+                        cy="80"
+                        r="60"
+                        fill="none"
+                        stroke="#f59e0b"
+                        strokeWidth="24"
+                        strokeDasharray="131.95 245.05"
+                        strokeDashoffset="-150.8"
+                        transform="rotate(-90 80 80)"
+                        className="transition-all duration-500"
+                      />
+                      {/* Inactive segment (gray) - 25% */}
+                      <circle
+                        cx="80"
+                        cy="80"
+                        r="60"
+                        fill="none"
+                        stroke="#94a3b8"
+                        strokeWidth="24"
+                        strokeDasharray="94.25 282.75"
+                        strokeDashoffset="-282.75"
+                        transform="rotate(-90 80 80)"
+                        className="transition-all duration-500"
+                      />
+                      {/* Center text */}
+                      <text
+                        x="80"
+                        y="75"
+                        textAnchor="middle"
+                        className="fill-purple-600 text-2xl font-bold"
+                        style={{ fontSize: "28px", fontWeight: "700" }}
+                      >
+                        {formatCount(customerCount)}
+                      </text>
+                      <text
+                        x="80"
+                        y="95"
+                        textAnchor="middle"
+                        className="fill-slate-500 text-xs"
+                        style={{ fontSize: "11px" }}
+                      >
+                        Khách hàng
+                      </text>
+                    </svg>
                   </div>
 
-                  {/* Các stat cards nhỏ */}
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="bg-white/80 rounded-xl p-3 text-center border border-emerald-100">
-                      <div className="text-lg font-bold text-emerald-600">—</div>
-                      <p className="text-xs text-slate-500">Active</p>
+                  {/* Legend */}
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 rounded-full bg-emerald-500"></div>
+                      <div>
+                        <p className="text-sm font-semibold text-slate-700">Active</p>
+                        <p className="text-xs text-slate-500">40%</p>
+                      </div>
                     </div>
-                    <div className="bg-white/80 rounded-xl p-3 text-center border border-amber-100">
-                      <div className="text-lg font-bold text-amber-600">—</div>
-                      <p className="text-xs text-slate-500">Lead</p>
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 rounded-full bg-amber-500"></div>
+                      <div>
+                        <p className="text-sm font-semibold text-slate-700">Lead</p>
+                        <p className="text-xs text-slate-500">35%</p>
+                      </div>
                     </div>
-                    <div className="bg-white/80 rounded-xl p-3 text-center border border-slate-100">
-                      <div className="text-lg font-bold text-slate-600">—</div>
-                      <p className="text-xs text-slate-500">Inactive</p>
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 rounded-full bg-slate-400"></div>
+                      <div>
+                        <p className="text-sm font-semibold text-slate-700">Inactive</p>
+                        <p className="text-xs text-slate-500">25%</p>
+                      </div>
                     </div>
                   </div>
                 </div>
