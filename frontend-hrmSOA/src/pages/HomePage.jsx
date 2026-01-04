@@ -234,8 +234,9 @@ function HomePage() {
 
           {/* Biểu đồ - Chỉ Admin */}
           {role === "admin" && (
-            <div className="grid gap-6 xl:grid-cols-3">
-              <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 xl:col-span-2">
+            <div className="grid gap-6 xl:grid-cols-2">
+              {/* Biểu đồ phân bổ nhân viên theo phòng ban */}
+              <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <p className="text-sm text-slate-500">Thống kê nhân sự</p>
@@ -250,7 +251,7 @@ function HomePage() {
                 {loading ? (
                   <p className="text-sm text-slate-500">Đang tải...</p>
                 ) : (
-                  <div className="relative h-80 bg-slate-50 border border-slate-100 rounded-2xl p-4">
+                  <div className="relative h-64 bg-slate-50 border border-slate-100 rounded-2xl p-4">
                     <div
                       className="absolute inset-4 rounded-xl pointer-events-none"
                       style={{
@@ -258,23 +259,23 @@ function HomePage() {
                           "repeating-linear-gradient(to top, transparent, transparent 38px, rgba(148,163,184,0.2) 39px, rgba(148,163,184,0.2) 40px)",
                       }}
                     />
-                    <div className="relative h-full flex items-end justify-around gap-6">
+                    <div className="relative h-full flex items-end justify-around gap-4">
                       {deptStats.length === 0 && (
                         <div className="text-sm text-slate-500">
                           Chưa có dữ liệu phân bổ phòng ban.
                         </div>
                       )}
-                      {deptStats.map(([dep, count]) => (
+                      {deptStats.slice(0, 5).map(([dep, count]) => (
                         <div key={dep} className="flex flex-col items-center gap-2">
                           <div
-                            className="w-12 rounded-xl bg-indigo-500 shadow-lg shadow-indigo-200"
+                            className="w-10 rounded-xl bg-indigo-500 shadow-lg shadow-indigo-200"
                             style={{
-                              height: `${(count / maxDeptCount) * 80 + 40}px`,
-                              minHeight: "40px",
+                              height: `${(count / maxDeptCount) * 80 + 30}px`,
+                              minHeight: "30px",
                             }}
                             title={`${dep}: ${count}`}
                           />
-                          <span className="text-xs text-slate-600 text-center w-24 leading-snug">
+                          <span className="text-xs text-slate-600 text-center w-16 leading-snug truncate">
                             {dep}
                           </span>
                         </div>
@@ -284,55 +285,44 @@ function HomePage() {
                 )}
               </div>
 
-              <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 flex flex-col">
-                <p className="text-sm text-slate-500">Xu hướng tuyển dụng</p>
-                <h3 className="text-xl font-bold text-slate-900 mb-4">
-                  Tăng trưởng nhân sự 6 tháng
-                </h3>
+              {/* Biểu đồ thống kê khách hàng */}
+              <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <p className="text-sm text-purple-500">Thống kê CRM</p>
+                    <h3 className="text-xl font-bold text-slate-900">
+                      Tổng quan khách hàng
+                    </h3>
+                  </div>
+                  <span
+                    className="text-sm text-purple-600 cursor-pointer flex items-center gap-1 hover:underline"
+                    onClick={() => navigate(customersPath)}
+                  >
+                    Xem chi tiết <span className="text-base">↗</span>
+                  </span>
+                </div>
+                <div className="relative h-64 bg-gradient-to-br from-purple-50 to-white border border-purple-100 rounded-2xl p-4 flex flex-col justify-center">
+                  {/* Số tổng khách hàng lớn */}
+                  <div className="text-center mb-6">
+                    <div className="text-5xl font-extrabold text-purple-600 tracking-tight">
+                      {formatCount(customerCount)}
+                    </div>
+                    <p className="text-sm text-slate-500 mt-1">Tổng khách hàng</p>
+                  </div>
 
-                <div className="flex-1 flex items-center justify-center">
-                  <div className="w-full h-56 bg-white rounded-2xl relative overflow-hidden border border-slate-100">
-                    <div className="absolute inset-0 bg-gradient-to-b from-indigo-50/80 via-white to-white" />
-                    <svg
-                      className="absolute inset-0 w-full h-full"
-                      viewBox="0 0 300 200"
-                      preserveAspectRatio="none"
-                    >
-                      <defs>
-                        <linearGradient id="trendFill" x1="0" x2="0" y1="0" y2="1">
-                          <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.35" />
-                          <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.05" />
-                        </linearGradient>
-                      </defs>
-                      <path
-                        d="
-                          M 0 140
-                          C 40 110, 70 120, 100 140
-                          C 120 150, 140 140, 160 110
-                          C 190 70, 230 60, 300 40
-                          L 300 200 L 0 200 Z
-                        "
-                        fill="url(#trendFill)"
-                        stroke="none"
-                      />
-                      <path
-                        d="
-                          M 0 140
-                          C 40 110, 70 120, 100 140
-                          C 120 150, 140 140, 160 110
-                          C 190 70, 230 60, 300 40
-                        "
-                        fill="none"
-                        stroke="#8b5cf6"
-                        strokeWidth="4"
-                        strokeLinecap="round"
-                      />
-                    </svg>
-
-                    <div className="absolute inset-x-0 bottom-12 px-4 flex justify-between text-xs text-slate-500">
-                      {["T1", "T2", "T3", "T4", "T5", "T6"].map((m) => (
-                        <span key={m}>{m}</span>
-                      ))}
+                  {/* Các stat cards nhỏ */}
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="bg-white/80 rounded-xl p-3 text-center border border-emerald-100">
+                      <div className="text-lg font-bold text-emerald-600">—</div>
+                      <p className="text-xs text-slate-500">Active</p>
+                    </div>
+                    <div className="bg-white/80 rounded-xl p-3 text-center border border-amber-100">
+                      <div className="text-lg font-bold text-amber-600">—</div>
+                      <p className="text-xs text-slate-500">Lead</p>
+                    </div>
+                    <div className="bg-white/80 rounded-xl p-3 text-center border border-slate-100">
+                      <div className="text-lg font-bold text-slate-600">—</div>
+                      <p className="text-xs text-slate-500">Inactive</p>
                     </div>
                   </div>
                 </div>
