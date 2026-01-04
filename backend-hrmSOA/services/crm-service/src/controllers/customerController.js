@@ -282,10 +282,6 @@ async function restoreMany(req, res) {
         skipped.push({ id, reason: "not_deleted_or_not_found" });
         continue;
       }
-      if (!isAdmin(req) && String(current.ownerId || "") !== actorId) {
-        skipped.push({ id, reason: "forbidden" });
-        continue;
-      }
       const r = await repo.restoreCustomer(id);
       restored.push(r);
       await logAuditSafe({
@@ -340,10 +336,6 @@ async function deleteManyHard(req, res) {
       const current = await repo.getCustomer(id);
       if (!current || !current.deleted) {
         skipped.push({ id, reason: "not_deleted_or_not_found" });
-        continue;
-      }
-      if (!isAdmin(req) && String(current.ownerId || "") !== actorId) {
-        skipped.push({ id, reason: "forbidden" });
         continue;
       }
       okIds.push(id);

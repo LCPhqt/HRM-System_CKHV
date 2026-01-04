@@ -33,7 +33,9 @@ function CustomerHistoryPage() {
   };
 
   useEffect(() => {
-    if (role === "admin") fetchDeleted();
+    if (role === "admin") {
+      fetchDeleted();
+    }
   }, [token, role]);
 
   const handleRestore = async (id) => {
@@ -132,130 +134,130 @@ function CustomerHistoryPage() {
             </div>
           </div>
         ) : (
-        <div className="px-10 pt-8 pb-6 space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-slate-500">Lịch sử khách hàng (đã xóa)</p>
-              <h1 className="text-2xl font-bold text-slate-900">Khôi phục khách hàng</h1>
-              <p className="text-sm text-slate-500">
-                Xem ai đã xóa và khôi phục khách hàng. Chỉ hiển thị tối đa 200 bản ghi gần nhất.
-              </p>
-            </div>
-            <button
-              onClick={() => (window.location.href = backPath)}
-              className="px-4 py-2 rounded-lg text-sm font-semibold bg-white border border-slate-200 text-slate-700 shadow-sm hover:border-indigo-200"
-            >
-              ← Quay lại
-            </button>
-          </div>
-
-          {error && (
-            <div className="bg-rose-50 border border-rose-100 text-rose-700 text-sm px-4 py-3 rounded-xl">
-              {error}
-            </div>
-          )}
-
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="p-4 border-b border-slate-200 flex items-center justify-between">
-              <div className="font-semibold text-slate-800">
-                Danh sách đã xóa{" "}
-                <span className="text-slate-500 text-sm font-normal">({rows.length})</span>
+          <div className="px-10 pt-8 pb-6 space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-slate-500">Lịch sử khách hàng (đã xóa)</p>
+                <h1 className="text-2xl font-bold text-slate-900">Khôi phục khách hàng</h1>
+                <p className="text-sm text-slate-500">
+                  Xem ai đã xóa và khôi phục khách hàng. Chỉ hiển thị tối đa 200 bản ghi gần nhất.
+                </p>
               </div>
-              <div className="flex items-center gap-2">
-                {selectedIds.size > 0 && (
-                  <button
-                    onClick={handleRestoreSelected}
-                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-100"
-                  >
-                    Khôi phục đã chọn ({selectedIds.size})
-                  </button>
-                )}
-                {selectedIds.size > 0 && (
-                  <button
-                    onClick={handleDeleteSelected}
-                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-100"
-                  >
-                    Xóa vĩnh viễn đã chọn
-                  </button>
-                )}
-                <button
-                  onClick={fetchDeleted}
-                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:border-indigo-200"
-                >
-                  ⟳ Tải lại
-                </button>
-                {loading && <span className="text-sm text-slate-500">Đang tải...</span>}
-              </div>
+              <button
+                onClick={() => (window.location.href = backPath)}
+                className="px-4 py-2 rounded-lg text-sm font-semibold bg-white border border-slate-200 text-slate-700 shadow-sm hover:border-indigo-200"
+              >
+                ← Quay lại
+              </button>
             </div>
 
-            <div className="overflow-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-slate-50 text-slate-600">
-                  <tr>
-                    <th className="px-4 py-3 w-10">
-                      <input
-                        type="checkbox"
-                        checked={rows.length > 0 && selectedIds.size === rows.length}
-                        onChange={toggleSelectAll}
-                        className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-                      />
-                    </th>
-                    <th className="px-4 py-3 text-left font-semibold">Tên</th>
-                    <th className="px-4 py-3 text-left font-semibold">Email</th>
-                    <th className="px-4 py-3 text-left font-semibold">Phụ trách</th>
-                    <th className="px-4 py-3 text-left font-semibold">Xóa lúc</th>
-                    <th className="px-4 py-3 text-left font-semibold">Người xóa</th>
-                    <th className="px-4 py-3 text-right font-semibold">Hành động</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {!loading && rows.length === 0 && (
-                    <tr>
-                      <td className="px-4 py-6 text-slate-500" colSpan={7}>
-                        Chưa có bản ghi đã xóa.
-                      </td>
-                    </tr>
+            {error && (
+              <div className="bg-rose-50 border border-rose-100 text-rose-700 text-sm px-4 py-3 rounded-xl">
+                {error}
+              </div>
+            )}
+
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="p-4 border-b border-slate-200 flex items-center justify-between">
+                <div className="font-semibold text-slate-800">
+                  Danh sách đã xóa{" "}
+                  <span className="text-slate-500 text-sm font-normal">({rows.length})</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {selectedIds.size > 0 && (
+                    <button
+                      onClick={handleRestoreSelected}
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-100"
+                    >
+                      Khôi phục đã chọn ({selectedIds.size})
+                    </button>
                   )}
-                  {rows.map((c) => (
-                    <tr key={c.id} className="border-t border-slate-100 hover:bg-slate-50">
-                      <td className="px-4 py-3">
+                  {selectedIds.size > 0 && (
+                    <button
+                      onClick={handleDeleteSelected}
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-100"
+                    >
+                      Xóa vĩnh viễn đã chọn
+                    </button>
+                  )}
+                  <button
+                    onClick={fetchDeleted}
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:border-indigo-200"
+                  >
+                    ⟳ Tải lại
+                  </button>
+                  {loading && <span className="text-sm text-slate-500">Đang tải...</span>}
+                </div>
+              </div>
+
+              <div className="overflow-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-slate-50 text-slate-600">
+                    <tr>
+                      <th className="px-4 py-3 w-10">
                         <input
                           type="checkbox"
-                          checked={selectedIds.has(c.id || c._id)}
-                          onChange={() => toggleSelect(c.id || c._id)}
+                          checked={rows.length > 0 && selectedIds.size === rows.length}
+                          onChange={toggleSelectAll}
                           className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
                         />
-                      </td>
-                      <td className="px-4 py-3 font-semibold text-slate-800">{c.name}</td>
-                      <td className="px-4 py-3 text-slate-600">{c.email || "-"}</td>
-                      <td className="px-4 py-3 text-slate-600">{c.ownerName || c.ownerId || "-"}</td>
-                      <td className="px-4 py-3 text-slate-600">
-                        {c.deletedAt ? new Date(c.deletedAt).toLocaleString("vi-VN") : "-"}
-                      </td>
-                      <td className="px-4 py-3 text-slate-600">
-                        {c.deletedByEmail || c.deletedBy || "Admin"}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <button
-                          onClick={() => handleRestore(c.id || c._id)}
-                          className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-100"
-                        >
-                          Khôi phục
-                        </button>
-                        <button
-                          onClick={() => handleDeleteHard(c.id || c._id)}
-                          className="ml-2 px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-100"
-                        >
-                          Xóa vĩnh viễn
-                        </button>
-                      </td>
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold">Tên</th>
+                      <th className="px-4 py-3 text-left font-semibold">Email</th>
+                      <th className="px-4 py-3 text-left font-semibold">Phụ trách</th>
+                      <th className="px-4 py-3 text-left font-semibold">Xóa lúc</th>
+                      <th className="px-4 py-3 text-left font-semibold">Người xóa</th>
+                      <th className="px-4 py-3 text-right font-semibold">Hành động</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {!loading && rows.length === 0 && (
+                      <tr>
+                        <td className="px-4 py-6 text-slate-500" colSpan={7}>
+                          Chưa có bản ghi đã xóa.
+                        </td>
+                      </tr>
+                    )}
+                    {rows.map((c) => (
+                      <tr key={c.id} className="border-t border-slate-100 hover:bg-slate-50">
+                        <td className="px-4 py-3">
+                          <input
+                            type="checkbox"
+                            checked={selectedIds.has(c.id || c._id)}
+                            onChange={() => toggleSelect(c.id || c._id)}
+                            className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                          />
+                        </td>
+                        <td className="px-4 py-3 font-semibold text-slate-800">{c.name}</td>
+                        <td className="px-4 py-3 text-slate-600">{c.email || "-"}</td>
+                        <td className="px-4 py-3 text-slate-600">{c.ownerName || c.ownerId || "-"}</td>
+                        <td className="px-4 py-3 text-slate-600">
+                          {c.deletedAt ? new Date(c.deletedAt).toLocaleString("vi-VN") : "-"}
+                        </td>
+                        <td className="px-4 py-3 text-slate-600">
+                          {c.deletedByEmail || c.deletedBy || "Admin"}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <button
+                            onClick={() => handleRestore(c.id || c._id)}
+                            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-100"
+                          >
+                            Khôi phục
+                          </button>
+                          <button
+                            onClick={() => handleDeleteHard(c.id || c._id)}
+                            className="ml-2 px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-100"
+                          >
+                            Xóa vĩnh viễn
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
-        </div>
         )}
       </main>
     </div>

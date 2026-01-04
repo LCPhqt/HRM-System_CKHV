@@ -95,6 +95,8 @@ function AppShell() {
             </ProtectedRoute>
           }
         />
+        {/* Lịch sử khách hàng: admin only, remove staff route */}
+
         {/*  admin departments */}
         <Route
           path="/departments"
