@@ -18,7 +18,7 @@ async function listCustomers({ search, status, ownerId, page = 1, limit = 50 } =
   if (ownerId) q.ownerId = ownerId;
   if (search) {
     const rx = new RegExp(escapeRegex(search), "i");
-    q.$or = [{ name: rx }, { email: rx }, { phone: rx }];
+    q.$or = [{ name: rx }, { email: rx }, { phone: rx }, { cccd: rx }, { address: rx }];
   }
 
   const safePage = Math.max(1, Number(page) || 1);
@@ -36,7 +36,7 @@ async function countCustomers({ search, status, ownerId } = {}) {
   if (ownerId) q.ownerId = ownerId;
   if (search) {
     const rx = new RegExp(escapeRegex(search), "i");
-    q.$or = [{ name: rx }, { email: rx }, { phone: rx }];
+    q.$or = [{ name: rx }, { email: rx }, { phone: rx }, { cccd: rx }, { address: rx }];
   }
   return Customer.countDocuments(q);
 }
@@ -161,14 +161,13 @@ async function importCustomers(customers = []) {
 
     normalized.push({
       name,
+      cccd: String(raw?.cccd || "").trim(),
       email: String(raw?.email || "").trim(),
       phone: String(raw?.phone || "").trim(),
       address: String(raw?.address || "").trim(),
-      industry: String(raw?.industry || "").trim(),
       ownerId,
-    ownerName,
-      status: raw?.status || "lead",
-      tags: Array.isArray(raw?.tags) ? raw.tags : []
+      ownerName,
+      status: raw?.status || "lead"
     });
   }
 

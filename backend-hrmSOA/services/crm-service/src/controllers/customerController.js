@@ -82,7 +82,7 @@ async function logAuditSafe(payload) {
 }
 
 async function createCustomer(req, res) {
-  const { name, email, phone, address, industry, ownerId, status, tags } = req.body || {};
+  const { name, cccd, email, phone, address, ownerId, status } = req.body || {};
   if (!name) return res.status(400).json({ message: "Tên khách hàng là bắt buộc" });
 
   // staff: auto-assign ownerId = user.id, không cho gán owner người khác
@@ -97,14 +97,13 @@ async function createCustomer(req, res) {
 
   const created = await repo.createCustomer({
     name,
+    cccd: cccd || "",
     email: email || "",
     phone: phone || "",
     address: address || "",
-    industry: industry || "",
     ownerId: assignedOwnerId,
     ownerName: ownerName || "",
-    status: status || "lead",
-    tags: Array.isArray(tags) ? tags : []
+    status: status || "lead"
   });
   await logAuditSafe({
     customerId: String(created.id),
@@ -150,14 +149,13 @@ async function updateCustomer(req, res) {
 
   const updated = await repo.updateCustomer(id, {
     ...("name" in payload ? { name: payload.name } : {}),
+    ...("cccd" in payload ? { cccd: payload.cccd || "" } : {}),
     ...("email" in payload ? { email: payload.email || "" } : {}),
     ...("phone" in payload ? { phone: payload.phone || "" } : {}),
     ...("address" in payload ? { address: payload.address || "" } : {}),
-    ...("industry" in payload ? { industry: payload.industry || "" } : {}),
     ...(isAdmin(req) && "ownerId" in payload ? { ownerId: nextOwnerId } : {}),
     ...(isAdmin(req) && "ownerName" in payload ? { ownerName: payload.ownerName || "" } : {}),
-    ...("status" in payload ? { status: payload.status } : {}),
-    ...("tags" in payload ? { tags: Array.isArray(payload.tags) ? payload.tags : [] } : {})
+    ...("status" in payload ? { status: payload.status } : {})
   });
   await logAuditSafe({
     customerId: String(id),

@@ -13,13 +13,12 @@ export default function StaffCustomersPage() {
 
   const [adding, setAdding] = useState(false);
   const [addForm, setAddForm] = useState({
+    cccd: "",
     name: "",
     email: "",
     phone: "",
     address: "",
-    industry: "",
     status: "lead",
-    tags: "",
   });
 
   const [importing, setImporting] = useState(false);
@@ -33,13 +32,12 @@ export default function StaffCustomersPage() {
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState({
     id: "",
+    cccd: "",
     name: "",
     email: "",
     phone: "",
     address: "",
-    industry: "",
     status: "lead",
-    tags: "",
   });
 
   const [logModal, setLogModal] = useState({
@@ -128,13 +126,13 @@ export default function StaffCustomersPage() {
       const xlsx = await import("xlsx");
       const rows = (customers || []).map((c, idx) => ({
         STT: idx + 1,
+        CCCD: c.cccd || "",
         "Tên khách hàng": c.name || "",
         Email: c.email || "",
         "Số điện thoại": c.phone || "",
         "Địa chỉ": c.address || "",
         "Người phụ trách": c.ownerName || "",
-        "Trạng thái": c.status || "",
-        Tags: Array.isArray(c.tags) ? c.tags.join(";") : c.tags || ""
+        "Trạng thái": c.status || ""
       }));
       const ws = xlsx.utils.json_to_sheet(rows);
       const wb = xlsx.utils.book_new();
@@ -158,7 +156,7 @@ export default function StaffCustomersPage() {
     if (!filter) return list;
     const q = filter.toLowerCase();
     return list.filter((c) => {
-      const text = `${c.name || ""} ${c.email || ""} ${c.phone || ""} ${c.industry || ""}`.toLowerCase();
+      const text = `${c.name || ""} ${c.cccd || ""} ${c.email || ""} ${c.phone || ""} ${c.address || ""}`.toLowerCase();
       return text.includes(q);
     });
   }, [customers, filter]);
@@ -169,35 +167,28 @@ export default function StaffCustomersPage() {
       return;
     }
 
-    const tagsArr = String(addForm.tags || "")
-      .split(",")
-      .map((t) => t.trim())
-      .filter(Boolean);
-
     try {
       await client.post(
         "/crm/customers",
         {
+          cccd: addForm.cccd.trim(),
           name: addForm.name.trim(),
           email: addForm.email.trim(),
           phone: addForm.phone.trim(),
           address: addForm.address.trim(),
-          industry: addForm.industry.trim(),
-          status: addForm.status,
-          tags: tagsArr,
+          status: addForm.status
         },
         { headers: authHeaders }
       );
 
       setAdding(false);
       setAddForm({
+        cccd: "",
         name: "",
         email: "",
         phone: "",
         address: "",
-        industry: "",
-        status: "lead",
-        tags: "",
+        status: "lead"
       });
       await fetchCustomers();
       await fetchCustomerCount();
@@ -261,16 +252,14 @@ export default function StaffCustomersPage() {
   };
 
   const handleEdit = (customer) => {
-    const tags = Array.isArray(customer.tags) ? customer.tags.join(", ") : (customer.tags || "");
     setEditForm({
       id: customer.id || customer._id,
+      cccd: customer.cccd || "",
       name: customer.name || "",
       email: customer.email || "",
       phone: customer.phone || "",
       address: customer.address || "",
-      industry: customer.industry || "",
       status: customer.status || "lead",
-      tags: tags,
     });
     setEditing(true);
   };
@@ -281,35 +270,28 @@ export default function StaffCustomersPage() {
       return;
     }
 
-    const tagsArr = String(editForm.tags || "")
-      .split(",")
-      .map((t) => t.trim())
-      .filter(Boolean);
-
     try {
       await client.put(
         `/crm/customers/${editForm.id}`,
         {
+          cccd: editForm.cccd.trim(),
           name: editForm.name.trim(),
           email: editForm.email.trim(),
           phone: editForm.phone.trim(),
           address: editForm.address.trim(),
-          industry: editForm.industry.trim(),
-          status: editForm.status,
-          tags: tagsArr,
+          status: editForm.status
         },
         { headers: authHeaders }
       );
       setEditing(false);
       setEditForm({
         id: "",
+        cccd: "",
         name: "",
         email: "",
         phone: "",
         address: "",
-        industry: "",
-        status: "lead",
-        tags: "",
+        status: "lead"
       });
       await fetchCustomers();
     } catch (err) {
@@ -374,34 +356,27 @@ export default function StaffCustomersPage() {
     const idx = (key) => headers.findIndex((h) => h === key);
     const nameIdx = idx("name");
     if (nameIdx < 0) {
-      throw new Error('CSV thiếu cột "name" (bắt buộc). Ví dụ header: name,email,phone,address,industry,status,tags');
+      throw new Error('CSV thiếu cột "name" (bắt buộc). Ví dụ header: name,cccd,email,phone,address,status');
     }
 
+    const cccdIdx = idx("cccd");
     const emailIdx = idx("email");
     const phoneIdx = idx("phone");
     const addressIdx = idx("address");
-    const industryIdx = idx("industry");
     const statusIdx = idx("status");
-    const tagsIdx = idx("tags");
 
     const rows = [];
     for (let i = 1; i < lines.length; i++) {
       const cols = splitCsvLine(lines[i]);
       const name = String(cols[nameIdx] || "").trim();
       if (!name) continue;
-      const tagsCell = tagsIdx >= 0 ? String(cols[tagsIdx] || "") : "";
-      const tags = tagsCell
-        .split(/[|;]/g)
-        .map((t) => t.trim())
-        .filter(Boolean);
       rows.push({
         name,
+        cccd: cccdIdx >= 0 ? String(cols[cccdIdx] || "").trim() : "",
         email: emailIdx >= 0 ? String(cols[emailIdx] || "").trim() : "",
         phone: phoneIdx >= 0 ? String(cols[phoneIdx] || "").trim() : "",
         address: addressIdx >= 0 ? String(cols[addressIdx] || "").trim() : "",
-        industry: industryIdx >= 0 ? String(cols[industryIdx] || "").trim() : "",
         status: statusIdx >= 0 ? String(cols[statusIdx] || "").trim() : "lead",
-        tags,
       });
     }
     return rows;
@@ -417,12 +392,11 @@ export default function StaffCustomersPage() {
     return arr
       .map((c) => ({
         name: String(c?.name || c?.full_name || c?.fullName || "").trim(),
+        cccd: String(c?.cccd || "").trim(),
         email: String(c?.email || "").trim(),
         phone: String(c?.phone || "").trim(),
         address: String(c?.address || "").trim(),
-        industry: String(c?.industry || "").trim(),
         status: String(c?.status || "lead").trim(),
-        tags: Array.isArray(c?.tags) ? c.tags : [],
       }))
       .filter((c) => c.name);
   };
@@ -510,7 +484,7 @@ export default function StaffCustomersPage() {
             <input
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
-              placeholder="Tìm kiếm theo tên, email, số điện thoại..."
+              placeholder="Tìm kiếm theo tên, email, số điện thoại, địa chỉ..."
               className="w-full outline-none text-sm text-slate-700"
             />
           </div>
@@ -594,7 +568,7 @@ export default function StaffCustomersPage() {
                   <th className="text-left px-4 py-3 font-semibold">Tên</th>
                   <th className="text-left px-4 py-3 font-semibold">Email</th>
                   <th className="text-left px-4 py-3 font-semibold">SĐT</th>
-                  <th className="text-left px-4 py-3 font-semibold">Ngành</th>
+                  <th className="text-left px-4 py-3 font-semibold">Địa chỉ</th>
                   <th className="text-left px-4 py-3 font-semibold">Trạng thái</th>
                   <th className="text-right px-4 py-3 font-semibold">Hành động</th>
                 </tr>
@@ -624,7 +598,7 @@ export default function StaffCustomersPage() {
                       <td className="px-4 py-3 font-semibold text-slate-800">{c.name}</td>
                       <td className="px-4 py-3 text-slate-600">{c.email || "-"}</td>
                       <td className="px-4 py-3 text-slate-600">{c.phone || "-"}</td>
-                      <td className="px-4 py-3 text-slate-600">{c.industry || "-"}</td>
+                      <td className="px-4 py-3 text-slate-600">{c.address || "-"}</td>
                       <td className="px-4 py-3">
                         <span
                           className={`inline-flex items-center px-2 py-1 rounded-lg text-xs font-semibold ${statusBadge(
@@ -685,6 +659,16 @@ export default function StaffCustomersPage() {
                 </div>
 
                 <div>
+                  <label className="text-sm text-slate-600 font-medium">CCCD</label>
+                  <input
+                    className="w-full border rounded-lg px-3 py-2 bg-slate-50"
+                    value={addForm.cccd}
+                    onChange={(e) => setAddForm((p) => ({ ...p, cccd: e.target.value }))}
+                    placeholder="Ví dụ: 012345678901"
+                  />
+                </div>
+
+                <div>
                   <label className="text-sm text-slate-600 font-medium">Trạng thái</label>
                   <select
                     className="w-full border rounded-lg px-3 py-2 bg-slate-50"
@@ -724,26 +708,6 @@ export default function StaffCustomersPage() {
                     value={addForm.address}
                     onChange={(e) => setAddForm((p) => ({ ...p, address: e.target.value }))}
                     placeholder="VD: 123 Nguyễn Trãi, Q1..."
-                  />
-                </div>
-
-                <div>
-                  <label className="text-sm text-slate-600 font-medium">Ngành</label>
-                  <input
-                    className="w-full border rounded-lg px-3 py-2 bg-slate-50"
-                    value={addForm.industry}
-                    onChange={(e) => setAddForm((p) => ({ ...p, industry: e.target.value }))}
-                    placeholder="VD: Retail"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-sm text-slate-600 font-medium">Tags (phân tách bằng dấu ,)</label>
-                  <input
-                    className="w-full border rounded-lg px-3 py-2 bg-slate-50"
-                    value={addForm.tags}
-                    onChange={(e) => setAddForm((p) => ({ ...p, tags: e.target.value }))}
-                    placeholder="vip, hanoi, ..."
                   />
                 </div>
               </div>
@@ -789,6 +753,16 @@ export default function StaffCustomersPage() {
                 </div>
 
                 <div>
+                  <label className="text-sm text-slate-600 font-medium">CCCD</label>
+                  <input
+                    className="w-full border rounded-lg px-3 py-2 bg-slate-50"
+                    value={editForm.cccd}
+                    onChange={(e) => setEditForm((p) => ({ ...p, cccd: e.target.value }))}
+                    placeholder="Ví dụ: 012345678901"
+                  />
+                </div>
+
+                <div>
                   <label className="text-sm text-slate-600 font-medium">Trạng thái</label>
                   <select
                     className="w-full border rounded-lg px-3 py-2 bg-slate-50"
@@ -821,16 +795,6 @@ export default function StaffCustomersPage() {
                   />
                 </div>
 
-                <div>
-                  <label className="text-sm text-slate-600 font-medium">Ngành nghề</label>
-                  <input
-                    className="w-full border rounded-lg px-3 py-2 bg-slate-50"
-                    value={editForm.industry}
-                    onChange={(e) => setEditForm((p) => ({ ...p, industry: e.target.value }))}
-                    placeholder="VD: Retail, IT, ..."
-                  />
-                </div>
-
                 <div className="md:col-span-2">
                   <label className="text-sm text-slate-600 font-medium">Địa chỉ</label>
                   <input
@@ -838,16 +802,6 @@ export default function StaffCustomersPage() {
                     value={editForm.address}
                     onChange={(e) => setEditForm((p) => ({ ...p, address: e.target.value }))}
                     placeholder="VD: 123 Nguyễn Trãi, Q1..."
-                  />
-                </div>
-
-                <div className="md:col-span-2">
-                  <label className="text-sm text-slate-600 font-medium">Tags (phân tách bằng dấu ,)</label>
-                  <input
-                    className="w-full border rounded-lg px-3 py-2 bg-slate-50"
-                    value={editForm.tags}
-                    onChange={(e) => setEditForm((p) => ({ ...p, tags: e.target.value }))}
-                    placeholder="vip, hanoi, ..."
                   />
                 </div>
               </div>
@@ -971,11 +925,7 @@ export default function StaffCustomersPage() {
                 <div>
                   - <span className="font-mono">.csv</span>: header tối thiểu{" "}
                   <span className="font-mono">name</span>, khuyến nghị{" "}
-                  <span className="font-mono">name,email,phone,address,industry,status,tags</span>
-                </div>
-                <div className="text-xs text-slate-500">
-                  * Cột <span className="font-mono">tags</span> trong CSV: phân tách bằng{" "}
-                  <span className="font-mono">|</span> hoặc <span className="font-mono">;</span>
+                  <span className="font-mono">name,cccd,email,phone,address,status</span>
                 </div>
               </div>
 
