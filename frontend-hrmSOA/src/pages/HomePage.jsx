@@ -137,60 +137,68 @@ function HomePage() {
             <p className="text-sm opacity-90 mb-1">
               Xin chào, {role === "admin" ? "Admin" : user?.email}
             </p>
-            <h1 className="text-3xl font-bold">Hệ thống HRM & CRM</h1>
+            <h1 className="text-3xl font-bold">
+              {role === "admin" ? "Hệ thống HRM & CRM" : "Quản lý Khách hàng"}
+            </h1>
             <p className="mt-2 text-sm text-indigo-100">
-              Tổng quan về tình hình nhân sự và quản lý khách hàng của công ty.
+              {role === "admin"
+                ? "Tổng quan về tình hình nhân sự và quản lý khách hàng của công ty."
+                : "Tổng quan về danh sách khách hàng bạn đang phụ trách."}
             </p>
           </header>
 
-          {/* HRM Section */}
-          <div className="mb-2">
-            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-              <span className="text-indigo-500">📊</span> Quản lý Nhân sự (HRM)
-            </h2>
-          </div>
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <div
-              className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 cursor-pointer hover:border-indigo-200 hover:shadow-md transition"
-              onClick={() => navigate(employeesPath)}
-            >
-              <p className="text-sm text-slate-500">Tổng nhân sự</p>
-              <div className="text-2xl lg:text-3xl font-bold text-slate-900 mt-2 tracking-tight break-all leading-tight">
-                {formatCount(totalEmployees)}
+          {/* HRM Section - Chỉ Admin */}
+          {role === "admin" && (
+            <>
+              <div className="mb-2">
+                <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                  <span className="text-indigo-500">📊</span> Quản lý Nhân sự (HRM)
+                </h2>
               </div>
-              <p className="text-xs text-emerald-600 mt-1">↗ ổn định</p>
-            </div>
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <div
+                  className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 cursor-pointer hover:border-indigo-200 hover:shadow-md transition"
+                  onClick={() => navigate(employeesPath)}
+                >
+                  <p className="text-sm text-slate-500">Tổng nhân sự</p>
+                  <div className="text-2xl lg:text-3xl font-bold text-slate-900 mt-2 tracking-tight break-all leading-tight">
+                    {formatCount(totalEmployees)}
+                  </div>
+                  <p className="text-xs text-emerald-600 mt-1">↗ ổn định</p>
+                </div>
 
-            <div
-              className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 cursor-pointer hover:border-indigo-200 hover:shadow-md transition"
-              onClick={() => navigate(departmentsPath)}
-            >
-              <p className="text-sm text-slate-500">Phòng ban</p>
-              <div className="text-2xl lg:text-3xl font-bold text-slate-900 mt-2 tracking-tight break-all leading-tight">
-                {formatCount(totalDepartments)}
+                <div
+                  className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 cursor-pointer hover:border-indigo-200 hover:shadow-md transition"
+                  onClick={() => navigate(departmentsPath)}
+                >
+                  <p className="text-sm text-slate-500">Phòng ban</p>
+                  <div className="text-2xl lg:text-3xl font-bold text-slate-900 mt-2 tracking-tight break-all leading-tight">
+                    {formatCount(totalDepartments)}
+                  </div>
+                  <p className="text-xs text-indigo-600 mt-1">Đang hoạt động</p>
+                </div>
+
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+                  <p className="text-sm text-slate-500">Quỹ lương tháng (ước tính)</p>
+                  <div className="text-2xl lg:text-3xl font-bold text-slate-900 mt-2 tracking-tight break-words leading-tight">
+                    {formatMoney(avgSalary * totalEmployees || 0)}
+                  </div>
+                  <p className="text-xs text-amber-600 mt-1">Tính từ lương trung bình</p>
+                </div>
+
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+                  <p className="text-sm text-slate-500">Lương trung bình</p>
+                  <div className="text-2xl lg:text-3xl font-bold text-slate-900 mt-2 tracking-tight break-words leading-tight">
+                    {formatMoney(avgSalary)}
+                  </div>
+                  <p className="text-xs text-emerald-600 mt-1">Trên mỗi nhân viên</p>
+                </div>
               </div>
-              <p className="text-xs text-indigo-600 mt-1">Đang hoạt động</p>
-            </div>
+            </>
+          )}
 
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-              <p className="text-sm text-slate-500">Quỹ lương tháng (ước tính)</p>
-              <div className="text-2xl lg:text-3xl font-bold text-slate-900 mt-2 tracking-tight break-words leading-tight">
-                {formatMoney(avgSalary * totalEmployees || 0)}
-              </div>
-              <p className="text-xs text-amber-600 mt-1">Tính từ lương trung bình</p>
-            </div>
-
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-              <p className="text-sm text-slate-500">Lương trung bình</p>
-              <div className="text-2xl lg:text-3xl font-bold text-slate-900 mt-2 tracking-tight break-words leading-tight">
-                {formatMoney(avgSalary)}
-              </div>
-              <p className="text-xs text-emerald-600 mt-1">Trên mỗi nhân viên</p>
-            </div>
-          </div>
-
-          {/* CRM Section */}
-          <div className="mt-6 mb-2">
+          {/* CRM Section - Cả Admin và Staff */}
+          <div className={role === "admin" ? "mt-6 mb-2" : "mb-2"}>
             <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
               <span className="text-purple-500">🤝</span> Quản lý Khách hàng (CRM)
             </h2>
@@ -224,113 +232,123 @@ function HomePage() {
             </div>
           </div>
 
-          <div className="grid gap-6 xl:grid-cols-3">
-            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 xl:col-span-2">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <p className="text-sm text-slate-500">Thống kê nhân sự</p>
-                  <h3 className="text-xl font-bold text-slate-900">
-                    Phân bổ nhân viên theo phòng ban
-                  </h3>
+          {/* Biểu đồ - Chỉ Admin */}
+          {role === "admin" && (
+            <div className="grid gap-6 xl:grid-cols-3">
+              <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 xl:col-span-2">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <p className="text-sm text-slate-500">Thống kê nhân sự</p>
+                    <h3 className="text-xl font-bold text-slate-900">
+                      Phân bổ nhân viên theo phòng ban
+                    </h3>
+                  </div>
+                  <span className="text-sm text-indigo-600 cursor-default flex items-center gap-1">
+                    Chi tiết <span className="text-base">↗</span>
+                  </span>
                 </div>
-                <span className="text-sm text-indigo-600 cursor-default flex items-center gap-1">
-                  Chi tiết <span className="text-base">↗</span>
-                </span>
+                {loading ? (
+                  <p className="text-sm text-slate-500">Đang tải...</p>
+                ) : (
+                  <div className="relative h-80 bg-slate-50 border border-slate-100 rounded-2xl p-4">
+                    <div
+                      className="absolute inset-4 rounded-xl pointer-events-none"
+                      style={{
+                        backgroundImage:
+                          "repeating-linear-gradient(to top, transparent, transparent 38px, rgba(148,163,184,0.2) 39px, rgba(148,163,184,0.2) 40px)",
+                      }}
+                    />
+                    <div className="relative h-full flex items-end justify-around gap-6">
+                      {deptStats.length === 0 && (
+                        <div className="text-sm text-slate-500">
+                          Chưa có dữ liệu phân bổ phòng ban.
+                        </div>
+                      )}
+                      {deptStats.map(([dep, count]) => (
+                        <div key={dep} className="flex flex-col items-center gap-2">
+                          <div
+                            className="w-12 rounded-xl bg-indigo-500 shadow-lg shadow-indigo-200"
+                            style={{
+                              height: `${(count / maxDeptCount) * 80 + 40}px`,
+                              minHeight: "40px",
+                            }}
+                            title={`${dep}: ${count}`}
+                          />
+                          <span className="text-xs text-slate-600 text-center w-24 leading-snug">
+                            {dep}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-              {loading ? (
-                <p className="text-sm text-slate-500">Đang tải...</p>
-              ) : (
-                <div className="relative h-80 bg-slate-50 border border-slate-100 rounded-2xl p-4">
-                  <div
-                    className="absolute inset-4 rounded-xl pointer-events-none"
-                    style={{
-                      backgroundImage:
-                        "repeating-linear-gradient(to top, transparent, transparent 38px, rgba(148,163,184,0.2) 39px, rgba(148,163,184,0.2) 40px)",
-                    }}
-                  />
-                  <div className="relative h-full flex items-end justify-around gap-6">
-                    {deptStats.length === 0 && (
-                      <div className="text-sm text-slate-500">
-                        Chưa có dữ liệu phân bổ phòng ban.
-                      </div>
-                    )}
-                    {deptStats.map(([dep, count]) => (
-                      <div key={dep} className="flex flex-col items-center gap-2">
-                        <div
-                          className="w-12 rounded-xl bg-indigo-500 shadow-lg shadow-indigo-200"
-                          style={{
-                            height: `${(count / maxDeptCount) * 80 + 40}px`,
-                            minHeight: "40px",
-                          }}
-                          title={`${dep}: ${count}`}
-                        />
-                        <span className="text-xs text-slate-600 text-center w-24 leading-snug">
-                          {dep}
-                        </span>
-                      </div>
-                    ))}
+
+              <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 flex flex-col">
+                <p className="text-sm text-slate-500">Xu hướng tuyển dụng</p>
+                <h3 className="text-xl font-bold text-slate-900 mb-4">
+                  Tăng trưởng nhân sự 6 tháng
+                </h3>
+
+                <div className="flex-1 flex items-center justify-center">
+                  <div className="w-full h-56 bg-white rounded-2xl relative overflow-hidden border border-slate-100">
+                    <div className="absolute inset-0 bg-gradient-to-b from-indigo-50/80 via-white to-white" />
+                    <svg
+                      className="absolute inset-0 w-full h-full"
+                      viewBox="0 0 300 200"
+                      preserveAspectRatio="none"
+                    >
+                      <defs>
+                        <linearGradient id="trendFill" x1="0" x2="0" y1="0" y2="1">
+                          <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.35" />
+                          <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.05" />
+                        </linearGradient>
+                      </defs>
+                      <path
+                        d="
+                          M 0 140
+                          C 40 110, 70 120, 100 140
+                          C 120 150, 140 140, 160 110
+                          C 190 70, 230 60, 300 40
+                          L 300 200 L 0 200 Z
+                        "
+                        fill="url(#trendFill)"
+                        stroke="none"
+                      />
+                      <path
+                        d="
+                          M 0 140
+                          C 40 110, 70 120, 100 140
+                          C 120 150, 140 140, 160 110
+                          C 190 70, 230 60, 300 40
+                        "
+                        fill="none"
+                        stroke="#8b5cf6"
+                        strokeWidth="4"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+
+                    <div className="absolute inset-x-0 bottom-12 px-4 flex justify-between text-xs text-slate-500">
+                      {["T1", "T2", "T3", "T4", "T5", "T6"].map((m) => (
+                        <span key={m}>{m}</span>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              )}
-            </div>
-
-            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 flex flex-col">
-              <p className="text-sm text-slate-500">Xu hướng tuyển dụng</p>
-              <h3 className="text-xl font-bold text-slate-900 mb-4">
-                Tăng trưởng nhân sự 6 tháng
-              </h3>
-
-              <div className="flex-1 flex items-center justify-center">
-                <div className="w-full h-56 bg-white rounded-2xl relative overflow-hidden border border-slate-100">
-                  <div className="absolute inset-0 bg-gradient-to-b from-indigo-50/80 via-white to-white" />
-                  <svg
-                    className="absolute inset-0 w-full h-full"
-                    viewBox="0 0 300 200"
-                    preserveAspectRatio="none"
-                  >
-                    <defs>
-                      <linearGradient id="trendFill" x1="0" x2="0" y1="0" y2="1">
-                        <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.35" />
-                        <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.05" />
-                      </linearGradient>
-                    </defs>
-                    <path
-                      d="
-                        M 0 140
-                        C 40 110, 70 120, 100 140
-                        C 120 150, 140 140, 160 110
-                        C 190 70, 230 60, 300 40
-                        L 300 200 L 0 200 Z
-                      "
-                      fill="url(#trendFill)"
-                      stroke="none"
-                    />
-                    <path
-                      d="
-                        M 0 140
-                        C 40 110, 70 120, 100 140
-                        C 120 150, 140 140, 160 110
-                        C 190 70, 230 60, 300 40
-                      "
-                      fill="none"
-                      stroke="#8b5cf6"
-                      strokeWidth="4"
-                      strokeLinecap="round"
-                    />
-                  </svg>
-
-                  <div className="absolute inset-x-0 bottom-12 px-4 flex justify-between text-xs text-slate-500">
-                    {["T1", "T2", "T3", "T4", "T5", "T6"].map((m) => (
-                      <span key={m}>{m}</span>
-                    ))}
-                  </div>
+                <div className="mt-4 text-sm text-slate-500">
+                  Hôm nay: <span className="font-semibold text-slate-800">{today}</span>
                 </div>
               </div>
-              <div className="mt-4 text-sm text-slate-500">
-                Hôm nay: <span className="font-semibold text-slate-800">{today}</span>
-              </div>
             </div>
-          </div>
+          )}
+
+          {/* Footer cho Staff */}
+          {role !== "admin" && (
+            <div className="mt-4 text-sm text-slate-500">
+              Hôm nay: <span className="font-semibold text-slate-800">{today}</span>
+            </div>
+          )}
         </div>
       </main>
     </div>
