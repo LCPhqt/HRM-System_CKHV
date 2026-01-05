@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import logo from '../assets/logo.png';
 
 function LoginPage() {
   const { client, setToken, setRole, setUser } = useAuth();
@@ -99,8 +100,8 @@ function LoginPage() {
         {/* Left */}
         <div className="w-full md:w-1/2 p-8 md:p-12 lg:p-16 flex flex-col justify-center relative">
           <div className="mb-8">
-            <div className="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center mb-4 shadow-lg shadow-indigo-200 text-white text-xl">
-              💼
+            <div className="w-16 h-16 mb-4">
+              <img src={logo} alt="Logo" className="w-full h-full object-contain" />
             </div>
             <h1 className="text-3xl font-bold text-slate-800 tracking-tight mb-2">
               Chào mừng trở lại!
@@ -181,14 +182,14 @@ function LoginPage() {
 
           <div className="relative z-10">
             <div className="bg-white/10 backdrop-blur-md inline-flex px-4 py-2 rounded-full text-sm font-medium border border-white/10 mb-6">
-              ✨ HRM SOA System v2.0
+              ✨ HRM-CRM MVP System
             </div>
             <h2 className="text-4xl font-bold leading-tight mb-6">
-              Quản trị nhân sự <br />
+              Quản trị CRM & HRM <br />
               Hiệu quả &amp; Tinh gọn.
             </h2>
             <p className="text-indigo-100 text-lg leading-relaxed max-w-sm">
-              Tối ưu hóa quy trình quản lý nhân sự của bạn với kiến trúc SOA linh hoạt và giao diện người dùng hiện đại.
+              Tối ưu hóa quy trình quản lý của bạn với giao diện người dùng hiện đại.
             </p>
           </div>
 

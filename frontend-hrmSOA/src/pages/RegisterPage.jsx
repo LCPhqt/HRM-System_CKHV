@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import logo from '../assets/logo.png';
 
 function RegisterPage() {
   const { client } = useAuth();
@@ -78,11 +79,11 @@ function RegisterPage() {
         {/* Left */}
         <div className="w-full md:w-1/2 p-8 md:p-12 lg:p-16 flex flex-col justify-center relative">
           <div className="mb-8">
-            <div className="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center mb-4 shadow-lg shadow-indigo-200 text-white text-xl">
-              ✨
+            <div className="w-16 h-16 mb-4">
+              <img src={logo} alt="Logo" className="w-full h-full object-contain" />
             </div>
             <h1 className="text-3xl font-bold text-slate-800 tracking-tight mb-2">Tạo tài khoản mới</h1>
-            <p className="text-slate-500">Tham gia hệ thống quản trị nhân sự.</p>
+            <p className="text-slate-500">Tham gia hệ thống quản trị .</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
@@ -197,7 +198,7 @@ function RegisterPage() {
               Hiệu quả &amp; Tinh gọn.
             </h2>
             <p className="text-indigo-100 text-lg leading-relaxed max-w-sm">
-              Tối ưu hóa quy trình quản lý nhân sự của bạn với kiến trúc SOA linh hoạt và giao diện người dùng hiện đại.
+              Tối ưu hóa quy trình quản lý của bạn với giao diện người dùng hiện đại.
             </p>
           </div>
 
@@ -205,7 +206,7 @@ function RegisterPage() {
             <div className="flex items-center gap-4 bg-white/10 backdrop-blur-sm p-4 rounded-2xl border border-white/10">
               <div className="p-2 bg-emerald-500 rounded-lg shadow-lg"></div>
               <div>
-                <p className="font-bold text-sm">Quản lý lương tự động</p>
+                <p className="font-bold text-sm">Quản lý tự động</p>
                 <p className="text-xs text-indigo-100">Chính xác tuyệt đối</p>
               </div>
             </div>
