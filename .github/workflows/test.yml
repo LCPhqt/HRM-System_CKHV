@@ -29,7 +29,6 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '18'
-          cache: 'npm'
 
       - name: Install backend dependencies
         working-directory: test-hrmSOA/backend/identity-service
@@ -53,7 +52,6 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '18'
-          cache: 'npm'
 
       - name: Install frontend dependencies
         working-directory: frontend-hrmSOA
@@ -63,8 +61,8 @@ jobs:
         working-directory: test-hrmSOA
         run: npm ci
 
-      # ⚠️ KHÔNG cài chromedriver
-      # ⚠️ Chrome đã có sẵn trong ubuntu-latest
+      # Chrome đã có sẵn trong ubuntu-latest
+      # Selenium Manager sẽ tự tải ChromeDriver
 
       - name: Start frontend server
         working-directory: frontend-hrmSOA
