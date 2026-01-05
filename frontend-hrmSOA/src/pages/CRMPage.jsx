@@ -18,16 +18,39 @@ function CRMPage() {
 
   const [adding, setAdding] = useState(false);
   const [addForm, setAddForm] = useState({
+    cccd: "",
     name: "",
     email: "",
     phone: "",
     address: "",
     status: "lead",
-    tags: "",
     ownerId: "",
     ownerName: "",
   });
   const [employees, setEmployees] = useState([]);
+  const [selectedIds, setSelectedIds] = useState(new Set());
+
+  // Edit customer state
+  const [editing, setEditing] = useState(false);
+  const [editForm, setEditForm] = useState({
+    id: "",
+    cccd: "",
+    name: "",
+    email: "",
+    phone: "",
+    address: "",
+    status: "lead",
+    ownerId: "",
+    ownerName: "",
+  });
+
+  const [logModal, setLogModal] = useState({
+    open: false,
+    loading: false,
+    items: [],
+    customer: null,
+    error: "",
+  });
 
   const splitCsvLine = (line) => {
     const out = [];
@@ -69,34 +92,27 @@ function CRMPage() {
     const nameIdx = idx("name");
 
     if (nameIdx < 0) {
-      throw new Error('CSV thiếu cột "name" (bắt buộc). Ví dụ header: name,email,phone,address,industry,status,tags');
+      throw new Error('CSV thiếu cột "name" (bắt buộc). Ví dụ header: name,cccd,email,phone,address,status');
     }
 
+    const cccdIdx = idx("cccd");
     const emailIdx = idx("email");
     const phoneIdx = idx("phone");
     const addressIdx = idx("address");
-    const industryIdx = idx("industry");
     const statusIdx = idx("status");
-    const tagsIdx = idx("tags");
 
     const rows = [];
     for (let i = 1; i < lines.length; i++) {
       const cols = splitCsvLine(lines[i]);
       const name = String(cols[nameIdx] || "").trim();
       if (!name) continue;
-      const tagsCell = tagsIdx >= 0 ? String(cols[tagsIdx] || "") : "";
-      const tags = tagsCell
-        .split(/[|;]/g)
-        .map((t) => t.trim())
-        .filter(Boolean);
       rows.push({
         name,
+        cccd: cccdIdx >= 0 ? String(cols[cccdIdx] || "").trim() : "",
         email: emailIdx >= 0 ? String(cols[emailIdx] || "").trim() : "",
         phone: phoneIdx >= 0 ? String(cols[phoneIdx] || "").trim() : "",
         address: addressIdx >= 0 ? String(cols[addressIdx] || "").trim() : "",
-        industry: industryIdx >= 0 ? String(cols[industryIdx] || "").trim() : "",
-        status: statusIdx >= 0 ? String(cols[statusIdx] || "").trim() : "lead",
-        tags,
+        status: statusIdx >= 0 ? String(cols[statusIdx] || "").trim() : "lead"
       });
     }
     return rows;
@@ -112,12 +128,11 @@ function CRMPage() {
     return arr
       .map((c) => ({
         name: String(c?.name || c?.full_name || c?.fullName || "").trim(),
+        cccd: String(c?.cccd || "").trim(),
         email: String(c?.email || "").trim(),
         phone: String(c?.phone || "").trim(),
         address: String(c?.address || "").trim(),
-        industry: String(c?.industry || "").trim(),
-        status: String(c?.status || "lead").trim(),
-        tags: Array.isArray(c?.tags) ? c.tags : [],
+        status: String(c?.status || "lead").trim()
       }))
       .filter((c) => c.name);
   };
@@ -202,6 +217,108 @@ function CRMPage() {
     }
   };
 
+  const formatJson = (obj) => {
+    try {
+      return JSON.stringify(obj, null, 2);
+    } catch (e) {
+      return String(obj || "");
+    }
+  };
+
+  const actionStyle = (action) => {
+    const map = {
+      create: "bg-emerald-50 text-emerald-700 border-emerald-100",
+      update: "bg-amber-50 text-amber-700 border-amber-100",
+      delete: "bg-rose-50 text-rose-700 border-rose-100",
+      restore: "bg-blue-50 text-blue-700 border-blue-100",
+      import: "bg-indigo-50 text-indigo-700 border-indigo-100",
+    };
+    return map[action] || "bg-slate-50 text-slate-700 border-slate-100";
+  };
+
+  const actionIcon = (action) => {
+    const map = {
+      create: "➕",
+      update: "✏️",
+      delete: "🗑️",
+      restore: "♻️",
+      import: "⬇️",
+    };
+    return map[action] || "🛈";
+  };
+
+  const logDisplayFields = [
+    { key: "name", label: "Tên" },
+    { key: "cccd", label: "CCCD" },
+    { key: "email", label: "Email" },
+    { key: "phone", label: "SĐT" },
+    { key: "address", label: "Địa chỉ" },
+    { key: "status", label: "Trạng thái" },
+    { key: "ownerName", label: "Người phụ trách" },
+    { key: "deleted", label: "Đã xóa" },
+    { key: "deletedByEmail", label: "Xóa bởi" },
+    { key: "deletedAt", label: "Thời gian xóa" },
+    { key: "createdAt", label: "Ngày tạo" },
+    { key: "updatedAt", label: "Ngày sửa" },
+  ];
+
+  const formatFieldValue = (key, val) => {
+    if (val === undefined || val === null) return "—";
+    if (key === "deleted") return val ? "Có" : "Không";
+    if (["createdAt", "updatedAt", "deletedAt"].includes(key)) {
+      if (!val) return "—";
+      const d = new Date(val);
+      return isNaN(d) ? String(val) : d.toLocaleString("vi-VN");
+    }
+    return String(val);
+  };
+
+  const renderLogCard = (obj = {}, title = "") => {
+    const hasData = obj && Object.keys(obj || {}).length > 0;
+    return (
+      <div className="bg-white border border-slate-200 rounded-lg p-3 shadow-inner">
+        <div className="font-semibold text-slate-700 mb-2">{title}</div>
+        {!hasData && <div className="text-xs text-slate-400">Không có dữ liệu.</div>}
+        {hasData && (
+          <div className="grid sm:grid-cols-2 gap-2 text-xs text-slate-700">
+            {logDisplayFields.map((f) => (
+              <div
+                key={f.key}
+                className="bg-slate-50 border border-slate-100 rounded-md px-2 py-1 flex justify-between items-start gap-2"
+              >
+                <span className="text-slate-500">{f.label}</span>
+                <span className="font-semibold text-slate-800 text-right break-words">
+                  {formatFieldValue(f.key, obj[f.key])}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const openLogs = async (customer) => {
+    const id = customer?.id || customer?._id;
+    if (!id) return;
+    setLogModal((p) => ({ ...p, open: true, loading: true, customer, error: "", items: [] }));
+    try {
+      const { data } = await client.get(`/crm/customers/${id}/logs`, {
+        params: { page: 1, limit: 50 },
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      setLogModal((p) => ({ ...p, loading: false, items: Array.isArray(data) ? data : [] }));
+    } catch (err) {
+      console.error(err);
+      setLogModal((p) => ({
+        ...p,
+        loading: false,
+        items: [],
+        error: err?.response?.data?.message || err?.message || "Không tải được nhật ký",
+      }));
+    }
+  };
+
   const fetchCustomerCount = async () => {
     try {
       const { data } = await client.get("/crm/customers/count", {
@@ -218,13 +335,13 @@ function CRMPage() {
       const xlsx = await import("xlsx");
       const rows = (customers || []).map((c, idx) => ({
         STT: idx + 1,
+        CCCD: c.cccd || "",
         "Tên khách hàng": c.name || "",
         Email: c.email || "",
         "Số điện thoại": c.phone || "",
         "Địa chỉ": c.address || "",
         "Người phụ trách": c.ownerName || "",
-        "Trạng thái": c.status || "",
-        Tags: Array.isArray(c.tags) ? c.tags.join(";") : c.tags || ""
+        "Trạng thái": c.status || ""
       }));
       const ws = xlsx.utils.json_to_sheet(rows);
       const wb = xlsx.utils.book_new();
@@ -275,7 +392,7 @@ function CRMPage() {
           ""
         ).toLowerCase();
       })();
-      const text = `${c.name || ""} ${c.email || ""} ${c.phone || ""} ${ownerText}`.toLowerCase();
+      const text = `${c.name || ""} ${c.cccd || ""} ${c.email || ""} ${c.phone || ""} ${c.address || ""} ${ownerText}`.toLowerCase();
       return text.includes(q);
     });
   }, [customers, filter, employees]);
@@ -286,21 +403,16 @@ function CRMPage() {
       return;
     }
 
-    const tagsArr = String(addForm.tags || "")
-      .split(",")
-      .map((t) => t.trim())
-      .filter(Boolean);
-
     try {
       await client.post(
         "/crm/customers",
         {
+          cccd: addForm.cccd.trim(),
           name: addForm.name.trim(),
           email: addForm.email.trim(),
           phone: addForm.phone.trim(),
           address: addForm.address.trim(),
           status: addForm.status,
-          tags: tagsArr,
           ...(role === "admin" && addForm.ownerId ? { ownerId: addForm.ownerId } : {}),
           ...(role === "admin" && addForm.ownerName ? { ownerName: addForm.ownerName } : {}),
         },
@@ -308,12 +420,12 @@ function CRMPage() {
       );
       setAdding(false);
       setAddForm({
+        cccd: "",
         name: "",
         email: "",
         phone: "",
         address: "",
         status: "lead",
-        tags: "",
         ownerId: "",
         ownerName: "",
       });
@@ -325,6 +437,61 @@ function CRMPage() {
     }
   };
 
+  const handleEdit = (customer) => {
+    setEditForm({
+      id: customer.id || customer._id,
+      cccd: customer.cccd || "",
+      name: customer.name || "",
+      email: customer.email || "",
+      phone: customer.phone || "",
+      address: customer.address || "",
+      status: customer.status || "lead",
+      ownerId: customer.ownerId || customer.owner_id || "",
+      ownerName: customer.ownerName || "",
+    });
+    setEditing(true);
+  };
+
+  const handleUpdate = async () => {
+    if (!editForm.name.trim()) {
+      alert("Tên khách hàng là bắt buộc");
+      return;
+    }
+
+    try {
+      await client.put(
+        `/crm/customers/${editForm.id}`,
+        {
+          cccd: editForm.cccd.trim(),
+          name: editForm.name.trim(),
+          email: editForm.email.trim(),
+          phone: editForm.phone.trim(),
+          address: editForm.address.trim(),
+          status: editForm.status,
+          ...(role === "admin" && editForm.ownerId ? { ownerId: editForm.ownerId } : {}),
+          ...(role === "admin" && editForm.ownerName ? { ownerName: editForm.ownerName } : {}),
+        },
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+      );
+      setEditing(false);
+      setEditForm({
+        id: "",
+        cccd: "",
+        name: "",
+        email: "",
+        phone: "",
+        address: "",
+        status: "lead",
+        ownerId: "",
+        ownerName: "",
+      });
+      await fetchCustomers();
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || err.message || "Cập nhật khách hàng thất bại");
+    }
+  };
+
   const handleDelete = async (c) => {
     const id = c.id || c._id;
     if (!id) return;
@@ -333,11 +500,75 @@ function CRMPage() {
       await client.delete(`/crm/customers/${id}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
       await fetchCustomers();
       await fetchCustomerCount();
     } catch (err) {
       console.error(err);
       alert(err.response?.data?.message || err.message || "Xóa khách hàng thất bại");
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedIds.size === 0) return;
+    if (!window.confirm(`Xóa ${selectedIds.size} khách hàng đã chọn?`)) return;
+    try {
+      const ids = Array.from(selectedIds);
+      await Promise.all(
+        ids.map((id) =>
+          client.delete(`/crm/customers/${id}`, {
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+          })
+        )
+      );
+      setSelectedIds(new Set());
+      await fetchCustomers();
+      await fetchCustomerCount();
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || err.message || "Xóa thất bại");
+    }
+  };
+
+  const handleDeleteAll = async () => {
+    if (filtered.length === 0) return;
+    if (!window.confirm(`Xóa TẤT CẢ ${filtered.length} khách hàng? Hành động này không thể hoàn tác!`)) return;
+    try {
+      const ids = filtered.map((c) => c.id || c._id).filter(Boolean);
+      await Promise.all(
+        ids.map((id) =>
+          client.delete(`/crm/customers/${id}`, {
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+          })
+        )
+      );
+      setSelectedIds(new Set());
+      await fetchCustomers();
+      await fetchCustomerCount();
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || err.message || "Xóa thất bại");
+    }
+  };
+
+  const toggleSelect = (id) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filtered.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filtered.map((c) => c.id || c._id)));
     }
   };
 
@@ -349,11 +580,11 @@ function CRMPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-800 flex">
+    <div className="h-screen bg-slate-100 text-slate-800 flex overflow-hidden">
       <AdminSidebar />
 
       {/* Main */}
-      <main className="flex-1 p-8 space-y-6">
+      <main className="flex-1 p-8 space-y-6 overflow-y-auto">
         <header className="flex items-center justify-between">
           <div>
             <p className="text-sm text-slate-500">CRM</p>
@@ -386,6 +617,7 @@ function CRMPage() {
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
               placeholder="Tìm kiếm khách hàng theo tên, email, số điện thoại..."
+              placeholder="Tìm kiếm theo tên, email, số điện thoại, địa chỉ..."
               className="w-full outline-none text-sm text-slate-700"
             />
           </div>
@@ -420,23 +652,56 @@ function CRMPage() {
         </div>
 
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="p-4 border-b border-slate-200 flex items-center justify-between">
+          <div className="p-4 border-b border-slate-200 flex items-center justify-between flex-wrap gap-3">
             <div className="font-semibold text-slate-800">
               Danh sách khách hàng{" "}
               <span className="text-slate-500 text-sm font-normal">
                 ({customerCount || filtered.length})
               </span>
+              {selectedIds.size > 0 && (
+                <span className="ml-2 text-indigo-600 text-sm font-normal">
+                  • Đã chọn {selectedIds.size}
+                </span>
+              )}
             </div>
-            {loading && <div className="text-sm text-slate-500">Đang tải...</div>}
+            <div className="flex items-center gap-2">
+              {loading && <div className="text-sm text-slate-500">Đang tải...</div>}
+              {selectedIds.size > 0 && (
+                <button
+                  onClick={handleDeleteSelected}
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-500 text-white hover:bg-rose-600"
+                >
+                  🗑 Xóa đã chọn ({selectedIds.size})
+                </button>
+              )}
+              {filtered.length > 0 && (
+                <button
+                  onClick={handleDeleteAll}
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-100 text-rose-700 hover:bg-rose-200 border border-rose-200"
+                >
+                  Xóa tất cả
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="overflow-auto">
             <table className="w-full text-sm">
               <thead className="bg-slate-50 text-slate-600">
                 <tr>
+                  <th className="px-4 py-3 w-10">
+                    <input
+                      type="checkbox"
+                      checked={filtered.length > 0 && selectedIds.size === filtered.length}
+                      onChange={toggleSelectAll}
+                      className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                    />
+                  </th>
+                  <th className="text-center px-2 py-3 font-semibold w-12">STT</th>
                   <th className="text-left px-4 py-3 font-semibold">Tên</th>
                   <th className="text-left px-4 py-3 font-semibold">Email</th>
                   <th className="text-left px-4 py-3 font-semibold">SĐT</th>
+                  <th className="text-left px-4 py-3 font-semibold">Địa chỉ</th>
                   <th className="text-left px-4 py-3 font-semibold">Người phụ trách</th>
                   <th className="text-left px-4 py-3 font-semibold">Trạng thái</th>
                   <th className="text-right px-4 py-3 font-semibold">Hành động</th>
@@ -445,52 +710,77 @@ function CRMPage() {
               <tbody>
                 {!loading && filtered.length === 0 && (
                   <tr>
-                    <td className="px-4 py-6 text-slate-500" colSpan={6}>
+                    <td className="px-4 py-6 text-slate-500" colSpan={9}>
                       Chưa có khách hàng nào.
                     </td>
                   </tr>
                 )}
 
-                {filtered.map((c) => (
-                  <tr key={c.id || c._id} className="border-t border-slate-100 hover:bg-slate-50">
-                    <td className="px-4 py-3 font-semibold text-slate-800">{c.name}</td>
-                    <td className="px-4 py-3 text-slate-600">{c.email || "-"}</td>
-                    <td className="px-4 py-3 text-slate-600">{c.phone || "-"}</td>
-                    <td className="px-4 py-3 text-slate-600">
-                      {(() => {
-                        const ownerId = c.ownerId || c.owner_id || c.owner || "";
-                        if (!ownerId) return role === "admin" ? "Admin" : "Bạn";
-                        if (role !== "admin") return "Bạn";
-                        const emp = employees.find(
-                          (e) => String(e.id || e.userId || e._id || "") === String(ownerId)
-                        );
-                        const profile = emp?.profile || {};
-                        const fullName =
-                          emp?.full_name ||
-                          emp?.fullName ||
-                          profile.full_name ||
-                          profile.fullName ||
-                          emp?.name ||
-                          "";
-                        const email = emp?.email || profile.email || "";
-                        return fullName || email || "Admin";
-                      })()}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-flex items-center px-2 py-1 rounded-lg text-xs font-semibold ${statusBadge(c.status)}`}>
-                        {c.status || "lead"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <button
-                        onClick={() => handleDelete(c)}
-                        className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-100"
-                      >
-                        Xóa
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {filtered.map((c, index) => {
+                  const cId = c.id || c._id;
+                  return (
+                    <tr key={cId} className={`border-t border-slate-100 hover:bg-slate-50 ${selectedIds.has(cId) ? "bg-indigo-50" : ""}`}>
+                      <td className="px-4 py-3">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(cId)}
+                          onChange={() => toggleSelect(cId)}
+                          className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                        />
+                      </td>
+                      <td className="text-center px-2 py-3 text-slate-500 font-medium">{index + 1}</td>
+                      <td className="px-4 py-3 font-semibold text-slate-800">{c.name}</td>
+                      <td className="px-4 py-3 text-slate-600">{c.email || "-"}</td>
+                      <td className="px-4 py-3 text-slate-600">{c.phone || "-"}</td>
+                      <td className="px-4 py-3 text-slate-600">{c.address || "-"}</td>
+                      <td className="px-4 py-3 text-slate-600">
+                        {(() => {
+                          const ownerId = c.ownerId || c.owner_id || c.owner || "";
+                          if (!ownerId) return role === "admin" ? "Admin" : "Bạn";
+                          if (role !== "admin") return "Bạn";
+                          const emp = employees.find(
+                            (e) => String(e.id || e.userId || e._id || "") === String(ownerId)
+                          );
+                          const profile = emp?.profile || {};
+                          const fullName =
+                            emp?.full_name ||
+                            emp?.fullName ||
+                            profile.full_name ||
+                            profile.fullName ||
+                            emp?.name ||
+                            "";
+                          const email = emp?.email || profile.email || "";
+                          return fullName || email || "Admin";
+                        })()}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex items-center px-2 py-1 rounded-lg text-xs font-semibold ${statusBadge(c.status)}`}>
+                          {c.status || "lead"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-right space-x-2">
+                        <button
+                          onClick={() => handleEdit(c)}
+                          className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-100"
+                        >
+                          Sửa
+                        </button>
+                        <button
+                          onClick={() => handleDelete(c)}
+                          className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-100"
+                        >
+                          Xóa
+                        </button>
+                        <button
+                          onClick={() => openLogs(c)}
+                          className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200"
+                        >
+                          Nhật ký
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -515,6 +805,16 @@ function CRMPage() {
                     value={addForm.name}
                     onChange={(e) => setAddForm((p) => ({ ...p, name: e.target.value }))}
                     placeholder="VD: Công ty ABC"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm text-slate-600 font-medium">CCCD</label>
+                  <input
+                    className="w-full border rounded-lg px-3 py-2 bg-slate-50"
+                    value={addForm.cccd}
+                    onChange={(e) => setAddForm((p) => ({ ...p, cccd: e.target.value }))}
+                    placeholder="Ví dụ: 012345678901"
                   />
                 </div>
 
@@ -591,16 +891,6 @@ function CRMPage() {
                     placeholder="VD: 123 Nguyễn Trãi, Q1..."
                   />
                 </div>
-
-                <div>
-                  <label className="text-sm text-slate-600 font-medium">Tags (phân tách bằng dấu ,)</label>
-                  <input
-                    className="w-full border rounded-lg px-3 py-2 bg-slate-50"
-                    value={addForm.tags}
-                    onChange={(e) => setAddForm((p) => ({ ...p, tags: e.target.value }))}
-                    placeholder="vip, hanoi, ..."
-                  />
-                </div>
               </div>
 
               <div className="flex justify-end gap-2 pt-2">
@@ -616,6 +906,223 @@ function CRMPage() {
                 >
                   Lưu
                 </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Edit modal */}
+        {editing && (
+          <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-slate-800">Sửa thông tin khách hàng</h3>
+                <button className="text-slate-500 hover:text-slate-800" onClick={() => setEditing(false)}>
+                  ✕
+                </button>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm text-slate-600 font-medium">Tên khách hàng *</label>
+                  <input
+                    className="w-full border rounded-lg px-3 py-2 bg-slate-50"
+                    value={editForm.name}
+                    onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))}
+                    placeholder="VD: Công ty ABC"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm text-slate-600 font-medium">CCCD</label>
+                  <input
+                    className="w-full border rounded-lg px-3 py-2 bg-slate-50"
+                    value={editForm.cccd}
+                    onChange={(e) => setEditForm((p) => ({ ...p, cccd: e.target.value }))}
+                    placeholder="Ví dụ: 012345678901"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm text-slate-600 font-medium">Trạng thái</label>
+                  <select
+                    className="w-full border rounded-lg px-3 py-2 bg-slate-50"
+                    value={editForm.status}
+                    onChange={(e) => setEditForm((p) => ({ ...p, status: e.target.value }))}
+                  >
+                    <option value="lead">lead</option>
+                    <option value="active">active</option>
+                    <option value="inactive">inactive</option>
+                  </select>
+                </div>
+
+                {role === "admin" && (
+                  <div>
+                    <label className="text-sm text-slate-600 font-medium">Phụ trách (owner)</label>
+                    <select
+                      className="w-full border rounded-lg px-3 py-2 bg-slate-50"
+                      value={editForm.ownerId}
+                      onChange={(e) => setEditForm((p) => ({ ...p, ownerId: e.target.value }))}
+                    >
+                      <option value="">-- Không gán (chỉ admin thấy) --</option>
+                      {employees.map((emp) => {
+                        const profile = emp.profile || {};
+                        const fullName =
+                          emp.full_name ||
+                          emp.fullName ||
+                          profile.full_name ||
+                          profile.fullName ||
+                          emp.name ||
+                          "";
+                        return (
+                          <option key={emp.id || emp.userId || emp._id} value={emp.id || emp.userId || emp._id}>
+                            {fullName || emp.email || "Nhân viên"} ({emp.email || profile.email || ""})
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </div>
+                )}
+
+                <div>
+                  <label className="text-sm text-slate-600 font-medium">Email</label>
+                  <input
+                    className="w-full border rounded-lg px-3 py-2 bg-slate-50"
+                    value={editForm.email}
+                    onChange={(e) => setEditForm((p) => ({ ...p, email: e.target.value }))}
+                    placeholder="contact@abc.com"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm text-slate-600 font-medium">Số điện thoại</label>
+                  <input
+                    className="w-full border rounded-lg px-3 py-2 bg-slate-50"
+                    value={editForm.phone}
+                    onChange={(e) => setEditForm((p) => ({ ...p, phone: e.target.value }))}
+                    placeholder="090..."
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="text-sm text-slate-600 font-medium">Địa chỉ</label>
+                  <input
+                    className="w-full border rounded-lg px-3 py-2 bg-slate-50"
+                    value={editForm.address}
+                    onChange={(e) => setEditForm((p) => ({ ...p, address: e.target.value }))}
+                    placeholder="VD: 123 Nguyễn Trãi, Q1..."
+                  />
+                </div>
+
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  className="px-4 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 font-semibold hover:bg-slate-50"
+                  onClick={() => setEditing(false)}
+                >
+                  Hủy
+                </button>
+                <button
+                  className="px-4 py-2 rounded-xl bg-indigo-600 text-white font-semibold hover:bg-indigo-700"
+                  onClick={handleUpdate}
+                >
+                  Cập nhật
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Log modal */}
+        {logModal.open && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-[1px] flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl p-6 space-y-4 border border-slate-100">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                    📜 Nhật ký khách hàng
+                    <span className="text-xs font-medium px-2 py-1 rounded-full bg-slate-100 text-slate-600">
+                      Tối đa 50 log mới nhất
+                    </span>
+                  </h3>
+                  <p className="text-sm text-slate-500">
+                    {logModal.customer?.name || "Khách hàng"}
+                  </p>
+                </div>
+                <button
+                  className="text-slate-500 hover:text-slate-800 text-lg"
+                  onClick={() => setLogModal((p) => ({ ...p, open: false }))}
+                >
+                  ✕
+                </button>
+              </div>
+
+              {logModal.error && (
+                <div className="bg-rose-50 text-rose-700 text-sm px-3 py-2 rounded-lg border border-rose-100">
+                  {logModal.error}
+                </div>
+              )}
+
+              <div className="max-h-[560px] overflow-y-auto space-y-4 pr-1">
+                {logModal.loading && <p className="text-sm text-slate-500 py-2">Đang tải...</p>}
+                {!logModal.loading && logModal.items.length === 0 && (
+                  <p className="text-sm text-slate-500 py-2">Chưa có nhật ký.</p>
+                )}
+                {logModal.items.map((log, idx) => (
+                  <div
+                    key={log.id || idx}
+                    className="border border-slate-100 rounded-xl p-4 bg-gradient-to-br from-white to-slate-50 shadow-sm flex gap-3"
+                  >
+                    <div className="flex flex-col items-center gap-1">
+                      <div className="w-10 h-10 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center text-lg">
+                        {actionIcon(log.action)}
+                      </div>
+                      <div className="flex-1 w-px bg-slate-200" />
+                    </div>
+                    <div className="flex-1 space-y-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="space-y-1">
+                          <div className="flex flex-wrap items-center gap-2 text-sm">
+                            <span className="font-semibold text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-1 rounded-lg">
+                              {log.actorEmail || "N/A"}
+                            </span>
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-xs font-semibold border flex items-center gap-1 ${actionStyle(
+                                log.action
+                              )}`}
+                            >
+                              {actionIcon(log.action)} {log.action || "action"}
+                            </span>
+                          </div>
+                          {log.meta && (
+                            <div className="text-xs text-slate-600 flex flex-wrap gap-3">
+                              {log.meta.created !== undefined && <span>Tạo: {log.meta.created}</span>}
+                              {log.meta.skipped !== undefined && <span>Bỏ qua: {log.meta.skipped}</span>}
+                              {log.meta.errors !== undefined && <span>Lỗi: {log.meta.errors}</span>}
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-xs text-slate-500 whitespace-nowrap bg-slate-100 px-2 py-1 rounded-lg border border-slate-200">
+                          {log.createdAt
+                            ? new Date(log.createdAt).toLocaleString("vi-VN")
+                            : new Date(log.updatedAt || "").toLocaleString("vi-VN")}
+                        </div>
+                      </div>
+
+                      {(log.before || log.after) && (
+                        <div className="grid md:grid-cols-2 gap-3 text-xs">
+                          {log.before && renderLogCard(log.before, "Trước")}
+                          {log.after && renderLogCard(log.after, "Sau")}
+                        </div>
+                      )}
+
+                      {!log.before && !log.after && !log.meta && (
+                        <div className="text-xs text-slate-400">Không có chi tiết.</div>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -645,11 +1152,7 @@ function CRMPage() {
                 <div>
                   - <span className="font-mono">.csv</span>: header tối thiểu{" "}
                   <span className="font-mono">name</span>, khuyến nghị{" "}
-                  <span className="font-mono">name,email,phone,address,industry,status,tags</span>
-                </div>
-                <div className="text-xs text-slate-500">
-                  * Cột <span className="font-mono">tags</span> trong CSV: phân tách bằng{" "}
-                  <span className="font-mono">|</span> hoặc <span className="font-mono">;</span>
+                  <span className="font-mono">name,cccd,email,phone,address,status</span>
                 </div>
               </div>
 

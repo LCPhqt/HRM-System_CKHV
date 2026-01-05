@@ -26,12 +26,12 @@ export default function StaffDepartNhanVien() {
   }, [client]);
 
   return (
-    <div className="min-h-screen bg-white text-slate-900 flex">
+    <div className="h-screen bg-white text-slate-900 flex overflow-hidden">
       {/*  Dùng sidebar chuẩn cho staff */}
       <StaffSidebar />
 
       {/* Main */}
-      <main className="flex-1 bg-slate-50">
+      <main className="flex-1 bg-slate-50 overflow-y-auto">
         <div className="px-10 pt-8 pb-4">
           <p className="text-sm text-slate-500 font-medium">Chế độ xem</p>
           <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900">

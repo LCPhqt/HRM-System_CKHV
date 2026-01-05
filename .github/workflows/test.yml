@@ -10,6 +10,40 @@ jobs:
   frontend-tests:
     runs-on: ubuntu-latest
 
+    services:
+      mongodb:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.adminCommand(\"ping\")'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install backend dependencies
+        working-directory: test-hrmSOA/backend/identity-service
+        run: npm ci
+
+      - name: Run backend tests
+        working-directory: test-hrmSOA/backend/identity-service
+        run: npm test
+        env:
+          TEST_MONGO_URI: mongodb://localhost:27017/hrm_identity_test
+          JWT_SECRET: test_secret
+
+  frontend-tests:
+    name: Frontend UI Tests
+    runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v3
 
@@ -20,14 +54,14 @@ jobs:
 
       - name: Install frontend dependencies
         working-directory: frontend-hrmSOA
-        run: npm install
+        run: npm ci
 
       - name: Install test dependencies
         working-directory: test-hrmSOA
-        run: npm install
+        run: npm ci
 
       # Chrome đã có sẵn trong ubuntu-latest
-      # Selenium Manager sẽ tự tải ChromeDriver phù hợp
+      # Selenium Manager sẽ tự tải ChromeDriver
 
       - name: Start frontend server
         working-directory: frontend-hrmSOA
@@ -42,3 +76,5 @@ jobs:
         env:
           TEST_BASE_URL: http://localhost:4173
           HEADLESS: 'true'
+          TEST_USER_EMAIL: admin@gmail.com
+          TEST_USER_PASSWORD: admin123

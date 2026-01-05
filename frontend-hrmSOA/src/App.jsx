@@ -16,6 +16,7 @@ import StaffProfilePage from "./pages/StaffProfilePage";
 import StaffDepartNhanVien from "./pages/StaffDepartNhanVien";
 import StaffEmployNhanvien from "./pages/StaffEmployNhanvien";
 import StaffCustomersPage from "./pages/StaffCustomersPage";
+import CustomerHistoryPage from "./pages/CustomerHistoryPage";
 
 function DepartmentGate() {
   const { role } = useAuth();
@@ -94,6 +95,7 @@ function AppShell() {
             </ProtectedRoute>
           }
         />
+        {/* Lịch sử khách hàng: admin only, remove staff route */}
 
         {/*  admin departments */}
         <Route
@@ -128,6 +130,14 @@ function AppShell() {
           element={
             <ProtectedRoute role="admin">
               <CRMPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/crm/history"
+          element={
+            <ProtectedRoute role="admin">
+              <CustomerHistoryPage />
             </ProtectedRoute>
           }
         />

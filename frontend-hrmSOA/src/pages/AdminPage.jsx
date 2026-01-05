@@ -45,49 +45,49 @@ function AdminPage() {
   }, []);
 
   const filtered = useMemo(() => {
-  let list = [...employees];
+    let list = [...employees];
 
-  // ✅ filter status
-  if (statusFilter !== "all") {
-    list = list.filter((e) => {
-      const st = e.status || e.profile?.status || "working";
-      return st === statusFilter;
+    // ✅ filter status
+    if (statusFilter !== "all") {
+      list = list.filter((e) => {
+        const st = e.status || e.profile?.status || "working";
+        return st === statusFilter;
+      });
+    }
+
+    //  search text
+    if (!filter) return list;
+
+    return list.filter((e) => {
+      const profile = e.profile || {};
+
+      //  lấy tên chuẩn: ưu tiên từ profile
+      const fullName =
+        e.full_name ||
+        e.fullName ||
+        profile.fullName ||
+        profile.full_name ||
+        profile.name ||
+        e.name ||
+        "";
+
+      const email = e.email || profile.email || "";
+
+      const position = e.position || profile.position || "";
+      const department = e.department || profile.department || "";
+
+      const text = `${fullName} ${email} ${position} ${department}`.toLowerCase();
+
+      return text.includes(filter.toLowerCase());
     });
-  }
-
-  //  search text
-  if (!filter) return list;
-
-  return list.filter((e) => {
-    const profile = e.profile || {};
-
-    //  lấy tên chuẩn: ưu tiên từ profile
-    const fullName =
-      e.full_name ||
-      e.fullName ||
-      profile.fullName ||
-      profile.full_name ||
-      profile.name ||
-      e.name ||
-      "";
-
-    const email = e.email || profile.email || "";
-
-    const position = e.position || profile.position || "";
-    const department = e.department || profile.department || "";
-
-    const text = `${fullName} ${email} ${position} ${department}`.toLowerCase();
-
-    return text.includes(filter.toLowerCase());
-  });
-}, [employees, filter, statusFilter]);
+  }, [employees, filter, statusFilter]);
 
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-800 flex">
+    <div className="h-screen bg-slate-100 text-slate-800 flex overflow-hidden">
       <AdminSidebar />
 
       {/* Main */}
-      <main className="flex-1 p-8 space-y-6">
+      <main className="flex-1 p-8 space-y-6 overflow-y-auto">
         <header className="flex items-center justify-between">
           <div>
             <p className="text-sm text-slate-500">Nhân viên</p>
@@ -128,10 +128,10 @@ function AdminPage() {
               {statusFilter === "all"
                 ? "Tất cả"
                 : statusFilter === "working"
-                ? "Đang làm việc"
-                : statusFilter === "leave"
-                ? "Nghỉ phép"
-                : "Đã nghỉ việc"}
+                  ? "Đang làm việc"
+                  : statusFilter === "leave"
+                    ? "Nghỉ phép"
+                    : "Đã nghỉ việc"}
             </button>
 
             {openFilter && (

@@ -1,13 +1,14 @@
 import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import logoImg from "../assets/logo.png";
 
 export default function StaffSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
   const { logout, user } = useAuth();
 
- 
+
   const menu = [
     { label: "Tổng quan", icon: "📊", path: "/home" },
     { label: "Hồ sơ", icon: "👥", path: "/staff/employees" },
@@ -21,15 +22,13 @@ export default function StaffSidebar() {
   };
 
   return (
-    <aside className="w-64 bg-slate-900 text-slate-200 flex flex-col">
+    <aside className="w-64 bg-slate-900 text-slate-200 flex flex-col sticky top-0 h-screen">
       {/* Logo */}
       <div className="p-6 flex items-center gap-3 border-b border-slate-800">
-        <div className="h-10 w-10 rounded-xl bg-indigo-500 flex items-center justify-center text-white font-bold">
-          HR
-        </div>
+        <img src={logoImg} alt="MVP Logo" className="h-10 w-10 rounded-xl object-cover" />
         <div>
           <p className="text-xs uppercase tracking-widest text-slate-400">
-            HRM Core
+            HRM-CRM MVP
           </p>
           <p className="text-sm font-semibold">Enterprise SOA</p>
         </div>
@@ -41,11 +40,10 @@ export default function StaffSidebar() {
           <button
             key={item.label}
             onClick={() => navigate(item.path)}
-            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition ${
-              isActive(item.path)
-                ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/30"
-                : "hover:bg-slate-800"
-            }`}
+            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition ${isActive(item.path)
+              ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/30"
+              : "hover:bg-slate-800"
+              }`}
           >
             <span>{item.icon}</span>
             <span>{item.label}</span>

@@ -13,11 +13,12 @@ function normalize(doc) {
 
 async function listCustomers({ search, status, ownerId, page = 1, limit = 50 } = {}) {
   const q = {};
+  q.deleted = false;
   if (status) q.status = status;
   if (ownerId) q.ownerId = ownerId;
   if (search) {
     const rx = new RegExp(escapeRegex(search), "i");
-    q.$or = [{ name: rx }, { email: rx }, { phone: rx }];
+    q.$or = [{ name: rx }, { email: rx }, { phone: rx }, { cccd: rx }, { address: rx }];
   }
 
   const safePage = Math.max(1, Number(page) || 1);
@@ -30,13 +31,41 @@ async function listCustomers({ search, status, ownerId, page = 1, limit = 50 } =
 
 async function countCustomers({ search, status, ownerId } = {}) {
   const q = {};
+  q.deleted = false;
   if (status) q.status = status;
   if (ownerId) q.ownerId = ownerId;
   if (search) {
     const rx = new RegExp(escapeRegex(search), "i");
-    q.$or = [{ name: rx }, { email: rx }, { phone: rx }];
+    q.$or = [{ name: rx }, { email: rx }, { phone: rx }, { cccd: rx }, { address: rx }];
   }
   return Customer.countDocuments(q);
+}
+
+async function statusStats({ ownerId } = {}) {
+  const match = { deleted: false };
+  if (ownerId) match.ownerId = ownerId;
+
+  const raw = await Customer.aggregate([
+    { $match: match },
+    {
+      $group: {
+        _id: { $toLower: { $ifNull: ["$status", ""] } },
+        count: { $sum: 1 },
+      },
+    },
+  ]);
+
+  const stats = { total: 0, active: 0, lead: 0, inactive: 0, other: 0 };
+  for (const row of raw) {
+    const key = String(row?._id || "").trim().toLowerCase();
+    const c = Number(row?.count || 0);
+    stats.total += c;
+    if (key === "inactive" || key.includes("ngung")) stats.inactive += c;
+    else if (key === "active" || key.includes("hoat dong")) stats.active += c;
+    else if (key === "lead" || key.includes("tiem nang")) stats.lead += c;
+    else stats.other += c;
+  }
+  return stats;
 }
 
 async function getCustomer(id) {
@@ -54,6 +83,27 @@ async function findByNameAndOwner(name, ownerId) {
   return normalize(doc);
 }
 
+async function listDeletedCustomers({ ownerId, page = 1, limit = 50 } = {}) {
+  const q = { deleted: true };
+  if (ownerId) q.ownerId = ownerId;
+
+  const safePage = Math.max(1, Number(page) || 1);
+  const safeLimit = Math.min(200, Math.max(1, Number(limit) || 50));
+  const skip = (safePage - 1) * safeLimit;
+
+  const docs = await Customer.find(q).sort({ deletedAt: -1 }).skip(skip).limit(safeLimit).lean();
+  return docs.map(normalize);
+}
+
+async function restoreCustomer(id) {
+  const updated = await Customer.findByIdAndUpdate(
+    id,
+    { $set: { deleted: false, deletedAt: null, deletedBy: "", deletedByEmail: "" } },
+    { new: true }
+  ).lean();
+  return normalize(updated);
+}
+
 async function createCustomer(payload) {
   const created = await Customer.create(payload);
   // Convert to lean-like object with id
@@ -66,8 +116,22 @@ async function updateCustomer(id, payload) {
 }
 
 async function deleteCustomer(id) {
+  const deleted = await Customer.findByIdAndUpdate(
+    id,
+    { $set: { deleted: true, deletedAt: new Date() } },
+    { new: true }
+  ).lean();
+  return normalize(deleted);
+}
+
+async function deleteCustomerHard(id) {
   const deleted = await Customer.findByIdAndDelete(id).lean();
   return normalize(deleted);
+}
+
+async function deleteCustomersHard(ids = []) {
+  const result = await Customer.deleteMany({ _id: { $in: ids } });
+  return result?.deletedCount || 0;
 }
 
 async function importCustomers(customers = []) {
@@ -97,14 +161,13 @@ async function importCustomers(customers = []) {
 
     normalized.push({
       name,
+      cccd: String(raw?.cccd || "").trim(),
       email: String(raw?.email || "").trim(),
       phone: String(raw?.phone || "").trim(),
       address: String(raw?.address || "").trim(),
-      industry: String(raw?.industry || "").trim(),
       ownerId,
-    ownerName,
-      status: raw?.status || "lead",
-      tags: Array.isArray(raw?.tags) ? raw.tags : []
+      ownerName,
+      status: raw?.status || "lead"
     });
   }
 
@@ -166,7 +229,12 @@ module.exports = {
   createCustomer,
   updateCustomer,
   deleteCustomer,
-  importCustomers
+  deleteCustomerHard,
+  deleteCustomersHard,
+  importCustomers,
+  statusStats,
+  listDeletedCustomers,
+  restoreCustomer
 };
 
 
