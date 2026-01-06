@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { useAuth } from "../context/AuthContext";
-import StaffSidebar from "../components/StaffSidebar";
+import { useAuth } from "../../context/AuthContext";
+import StaffSidebar from "../../components/StaffSidebar";
 
 export default function StaffDepartNhanVien() {
   const { client } = useAuth();

@@ -1,15 +1,21 @@
 import React, { useEffect, useMemo, useState } from "react";
-import StaffSidebar from "../components/StaffSidebar";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../../context/AuthContext";
+import AdminSidebar from "../../components/AdminSidebar";
 
-export default function StaffCustomersPage() {
-  const { client, token } = useAuth();
+function CRMPage() {
+  const { client, token, role } = useAuth();
 
   const [customers, setCustomers] = useState([]);
   const [customerCount, setCustomerCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [filter, setFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [importing, setImporting] = useState(false);
+  const [importModal, setImportModal] = useState(false);
+  const [importPreview, setImportPreview] = useState([]);
+  const [importReport, setImportReport] = useState(null);
+  const [importErr, setImportErr] = useState("");
 
   const [adding, setAdding] = useState(false);
   const [addForm, setAddForm] = useState({
@@ -19,13 +25,10 @@ export default function StaffCustomersPage() {
     phone: "",
     address: "",
     status: "lead",
+    ownerId: "",
+    ownerName: "",
   });
-
-  const [importing, setImporting] = useState(false);
-  const [importModal, setImportModal] = useState(false);
-  const [importPreview, setImportPreview] = useState([]);
-  const [importReport, setImportReport] = useState(null);
-  const [importErr, setImportErr] = useState("");
+  const [employees, setEmployees] = useState([]);
   const [selectedIds, setSelectedIds] = useState(new Set());
 
   // Edit customer state
@@ -38,6 +41,8 @@ export default function StaffCustomersPage() {
     phone: "",
     address: "",
     status: "lead",
+    ownerId: "",
+    ownerName: "",
   });
 
   const [logModal, setLogModal] = useState({
@@ -48,16 +53,142 @@ export default function StaffCustomersPage() {
     error: "",
   });
 
-  const authHeaders = useMemo(
-    () => (token ? { Authorization: `Bearer ${token}` } : {}),
-    [token]
-  );
+  const splitCsvLine = (line) => {
+    const out = [];
+    let cur = "";
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') {
+        // escaped quote
+        if (inQuotes && line[i + 1] === '"') {
+          cur += '"';
+          i++;
+        } else {
+          inQuotes = !inQuotes;
+        }
+        continue;
+      }
+      if (ch === "," && !inQuotes) {
+        out.push(cur);
+        cur = "";
+        continue;
+      }
+      cur += ch;
+    }
+    out.push(cur);
+    return out.map((s) => String(s ?? "").trim());
+  };
 
-  const statusBadge = (st) => {
-    const s = st || "lead";
-    if (s === "active") return "bg-emerald-100 text-emerald-700 border border-emerald-200";
-    if (s === "inactive") return "bg-slate-100 text-slate-600 border border-slate-200";
-    return "bg-amber-100 text-amber-700 border border-amber-200";
+  const parseCsv = (text) => {
+    const cleaned = String(text || "").replace(/^\uFEFF/, ""); // strip BOM
+    const lines = cleaned
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter((l) => l.length > 0);
+    if (lines.length === 0) return [];
+
+    const headers = splitCsvLine(lines[0]).map((h) => h.toLowerCase().trim());
+    const idx = (key) => headers.findIndex((h) => h === key);
+    const nameIdx = idx("name");
+
+    if (nameIdx < 0) {
+      throw new Error('CSV thiếu cột "name" (bắt buộc). Ví dụ header: name,cccd,email,phone,address,status');
+    }
+
+    const cccdIdx = idx("cccd");
+    const emailIdx = idx("email");
+    const phoneIdx = idx("phone");
+    const addressIdx = idx("address");
+    const statusIdx = idx("status");
+
+    const rows = [];
+    for (let i = 1; i < lines.length; i++) {
+      const cols = splitCsvLine(lines[i]);
+      const name = String(cols[nameIdx] || "").trim();
+      if (!name) continue;
+      rows.push({
+        name,
+        cccd: cccdIdx >= 0 ? String(cols[cccdIdx] || "").trim() : "",
+        email: emailIdx >= 0 ? String(cols[emailIdx] || "").trim() : "",
+        phone: phoneIdx >= 0 ? String(cols[phoneIdx] || "").trim() : "",
+        address: addressIdx >= 0 ? String(cols[addressIdx] || "").trim() : "",
+        status: statusIdx >= 0 ? String(cols[statusIdx] || "").trim() : "lead"
+      });
+    }
+    return rows;
+  };
+
+  const parseJsonCustomers = (text) => {
+    const cleaned = String(text || "").replace(/^\uFEFF/, "");
+    const data = JSON.parse(cleaned);
+    const arr = Array.isArray(data) ? data : data?.customers;
+    if (!Array.isArray(arr)) {
+      throw new Error('JSON phải là mảng hoặc { "customers": [...] }');
+    }
+    return arr
+      .map((c) => ({
+        name: String(c?.name || c?.full_name || c?.fullName || "").trim(),
+        cccd: String(c?.cccd || "").trim(),
+        email: String(c?.email || "").trim(),
+        phone: String(c?.phone || "").trim(),
+        address: String(c?.address || "").trim(),
+        status: String(c?.status || "lead").trim()
+      }))
+      .filter((c) => c.name);
+  };
+
+  const handlePickImportFile = () => {
+    setImportErr("");
+    setImportReport(null);
+    setImportPreview([]);
+    setImportModal(true);
+  };
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImportErr("");
+    setImportReport(null);
+    try {
+      const text = await file.text();
+      const ext = (file.name.split(".").pop() || "").toLowerCase();
+      const parsed =
+        ext === "json" ? parseJsonCustomers(text) : ext === "csv" ? parseCsv(text) : null;
+      if (!parsed) throw new Error("Chỉ hỗ trợ file .json hoặc .csv");
+      setImportPreview(parsed);
+    } catch (err) {
+      console.error(err);
+      setImportPreview([]);
+      setImportErr(err?.message || "Không đọc/parse được file");
+    } finally {
+      // reset input để có thể chọn lại cùng file
+      e.target.value = "";
+    }
+  };
+
+  const handleImport = async () => {
+    if (importPreview.length === 0) {
+      setImportErr("Không có dữ liệu để import.");
+      return;
+    }
+    setImporting(true);
+    setImportErr("");
+    setImportReport(null);
+    try {
+      const { data } = await client.post(
+        "/crm/customers/import",
+        { customers: importPreview },
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+      );
+      setImportReport(data || null);
+      await fetchCustomers();
+    } catch (err) {
+      console.error(err);
+      setImportErr(err.response?.data?.message || err.message || "Import thất bại");
+    } finally {
+      setImporting(false);
+    }
   };
 
   const fetchCustomers = async () => {
@@ -65,11 +196,11 @@ export default function StaffCustomersPage() {
     setError("");
     try {
       const { data } = await client.get("/crm/customers", {
-        headers: authHeaders,
-        params: { page: 1, limit: 500 },
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        params: { page: 1, limit: 500 }, // tăng limit để tránh chỉ lấy 50 mặc định
       });
       setCustomers(data || []);
-      await fetchCustomerCount(); // count thật từ API để không bị cắt bởi limit
+      await fetchCustomerCount(); // luôn lấy count thật từ API (không dựa vào limit cắt)
     } catch (err) {
       console.error(err);
       setCustomers([]);
@@ -77,8 +208,6 @@ export default function StaffCustomersPage() {
       const serverMsg = err.response?.data?.message;
       if (status === 401) {
         setError(serverMsg || "401 Unauthorized: phiên đăng nhập không hợp lệ. Hãy đăng xuất và đăng nhập lại.");
-      } else if (status === 403) {
-        setError(serverMsg || "403 Forbidden: bạn không có quyền truy cập dữ liệu này.");
       } else if (status === 503) {
         setError(serverMsg || "CRM database chưa sẵn sàng (503). Hãy kiểm tra MongoDB và MONGO_URL.");
       } else {
@@ -87,6 +216,87 @@ export default function StaffCustomersPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const formatJson = (obj) => {
+    try {
+      return JSON.stringify(obj, null, 2);
+    } catch (e) {
+      return String(obj || "");
+    }
+  };
+
+  const actionStyle = (action) => {
+    const map = {
+      create: "bg-emerald-50 text-emerald-700 border-emerald-100",
+      update: "bg-amber-50 text-amber-700 border-amber-100",
+      delete: "bg-rose-50 text-rose-700 border-rose-100",
+      restore: "bg-blue-50 text-blue-700 border-blue-100",
+      import: "bg-indigo-50 text-indigo-700 border-indigo-100",
+    };
+    return map[action] || "bg-slate-50 text-slate-700 border-slate-100";
+  };
+
+  const actionIcon = (action) => {
+    const map = {
+      create: "➕",
+      update: "✏️",
+      delete: "🗑️",
+      restore: "♻️",
+      import: "⬇️",
+    };
+    return map[action] || "🛈";
+  };
+
+  const logDisplayFields = [
+    { key: "name", label: "Tên" },
+    { key: "cccd", label: "CCCD" },
+    { key: "email", label: "Email" },
+    { key: "phone", label: "SĐT" },
+    { key: "address", label: "Địa chỉ" },
+    { key: "status", label: "Trạng thái" },
+    { key: "ownerName", label: "Người phụ trách" },
+    { key: "deleted", label: "Đã xóa" },
+    { key: "deletedByEmail", label: "Xóa bởi" },
+    { key: "deletedAt", label: "Thời gian xóa" },
+    { key: "createdAt", label: "Ngày tạo" },
+    { key: "updatedAt", label: "Ngày sửa" },
+  ];
+
+  const formatFieldValue = (key, val) => {
+    if (val === undefined || val === null) return "—";
+    if (key === "deleted") return val ? "Có" : "Không";
+    if (["createdAt", "updatedAt", "deletedAt"].includes(key)) {
+      if (!val) return "—";
+      const d = new Date(val);
+      return isNaN(d) ? String(val) : d.toLocaleString("vi-VN");
+    }
+    return String(val);
+  };
+
+  const renderLogCard = (obj = {}, title = "") => {
+    const hasData = obj && Object.keys(obj || {}).length > 0;
+    return (
+      <div className="bg-white border border-slate-200 rounded-lg p-3 shadow-inner">
+        <div className="font-semibold text-slate-700 mb-2">{title}</div>
+        {!hasData && <div className="text-xs text-slate-400">Không có dữ liệu.</div>}
+        {hasData && (
+          <div className="grid sm:grid-cols-2 gap-2 text-xs text-slate-700">
+            {logDisplayFields.map((f) => (
+              <div
+                key={f.key}
+                className="bg-slate-50 border border-slate-100 rounded-md px-2 py-1 flex justify-between items-start gap-2"
+              >
+                <span className="text-slate-500">{f.label}</span>
+                <span className="font-semibold text-slate-800 text-right break-words">
+                  {formatFieldValue(f.key, obj[f.key])}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
   };
 
   const openLogs = async (customer) => {
@@ -113,7 +323,7 @@ export default function StaffCustomersPage() {
   const fetchCustomerCount = async () => {
     try {
       const { data } = await client.get("/crm/customers/count", {
-        headers: authHeaders,
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (typeof data?.count === "number") setCustomerCount(data.count);
     } catch (err) {
@@ -143,7 +353,7 @@ export default function StaffCustomersPage() {
       const ws = xlsx.utils.json_to_sheet(rows);
       const wb = xlsx.utils.book_new();
       xlsx.utils.book_append_sheet(wb, ws, "Customers");
-      xlsx.writeFile(wb, `customers_staff_${Date.now()}.xlsx`);
+      xlsx.writeFile(wb, `customers_admin_${Date.now()}.xlsx`);
     } catch (err) {
       console.error(err);
       alert("Xuất Excel thất bại. Vui lòng thử lại.");
@@ -151,21 +361,58 @@ export default function StaffCustomersPage() {
   };
 
   useEffect(() => {
+    // Admin: load danh sách nhân viên để gán owner (tùy chọn)
+    if (role === "admin" && token) {
+      client
+        .get("/admin/employees", { headers: { Authorization: `Bearer ${token}` } })
+        .then(({ data }) => setEmployees(Array.isArray(data) ? data : []))
+        .catch((err) => {
+          console.warn("Cannot load employees for owner select", err?.response?.data || err?.message || err);
+          setEmployees([]);
+        });
+    }
+
     if (!token) return;
     fetchCustomers();
     fetchCustomerCount();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
+  }, [token, role]);
 
   const filtered = useMemo(() => {
-    const list = [...customers];
-    if (!filter) return list;
-    const q = filter.toLowerCase();
-    return list.filter((c) => {
-      const text = `${c.name || ""} ${c.cccd || ""} ${c.email || ""} ${c.phone || ""} ${c.address || ""}`.toLowerCase();
-      return text.includes(q);
-    });
-  }, [customers, filter]);
+    let list = [...customers];
+
+    // Filter by status
+    if (statusFilter && statusFilter !== "all") {
+      list = list.filter((c) => (c.status || "lead") === statusFilter);
+    }
+
+    // Filter by search text
+    if (filter) {
+      const q = filter.toLowerCase();
+      list = list.filter((c) => {
+        const ownerId = c.ownerId || c.owner_id || c.owner || "";
+        const ownerText = (() => {
+          const emp = employees.find(
+            (e) => String(e.id || e.userId || e._id || "") === String(ownerId)
+          );
+          const profile = emp?.profile || {};
+          return (
+            emp?.full_name ||
+            emp?.fullName ||
+            profile.full_name ||
+            profile.fullName ||
+            emp?.email ||
+            profile.email ||
+            ""
+          ).toLowerCase();
+        })();
+        const text = `${c.name || ""} ${c.cccd || ""} ${c.email || ""} ${c.phone || ""} ${c.address || ""} ${ownerText}`.toLowerCase();
+        return text.includes(q);
+      });
+    }
+
+    return list;
+  }, [customers, filter, statusFilter, employees]);
 
   const handleCreate = async () => {
     if (!addForm.name.trim()) {
@@ -182,11 +429,12 @@ export default function StaffCustomersPage() {
           email: addForm.email.trim(),
           phone: addForm.phone.trim(),
           address: addForm.address.trim(),
-          status: addForm.status
+          status: addForm.status,
+          ...(role === "admin" && addForm.ownerId ? { ownerId: addForm.ownerId } : {}),
+          ...(role === "admin" && addForm.ownerName ? { ownerName: addForm.ownerName } : {}),
         },
-        { headers: authHeaders }
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
       );
-
       setAdding(false);
       setAddForm({
         cccd: "",
@@ -194,66 +442,15 @@ export default function StaffCustomersPage() {
         email: "",
         phone: "",
         address: "",
-        status: "lead"
+        status: "lead",
+        ownerId: "",
+        ownerName: "",
       });
       await fetchCustomers();
       await fetchCustomerCount();
     } catch (err) {
       console.error(err);
       alert(err.response?.data?.message || err.message || "Tạo khách hàng thất bại");
-    }
-  };
-
-  const handleDelete = async (c) => {
-    const id = c.id || c._id;
-    if (!id) return;
-    if (!window.confirm(`Xóa khách hàng "${c.name}"?`)) return;
-    try {
-      await client.delete(`/crm/customers/${id}`, { headers: authHeaders });
-      setSelectedIds((prev) => {
-        const next = new Set(prev);
-        next.delete(id);
-        return next;
-      });
-      await fetchCustomers();
-      await fetchCustomerCount();
-    } catch (err) {
-      console.error(err);
-      alert(err.response?.data?.message || err.message || "Xóa khách hàng thất bại");
-    }
-  };
-
-  const handleDeleteSelected = async () => {
-    if (selectedIds.size === 0) return;
-    if (!window.confirm(`Xóa ${selectedIds.size} khách hàng đã chọn?`)) return;
-    try {
-      const ids = Array.from(selectedIds);
-      await Promise.all(
-        ids.map((id) => client.delete(`/crm/customers/${id}`, { headers: authHeaders }))
-      );
-      setSelectedIds(new Set());
-      await fetchCustomers();
-      await fetchCustomerCount();
-    } catch (err) {
-      console.error(err);
-      alert(err.response?.data?.message || err.message || "Xóa thất bại");
-    }
-  };
-
-  const handleDeleteAll = async () => {
-    if (filtered.length === 0) return;
-    if (!window.confirm(`Xóa TẤT CẢ ${filtered.length} khách hàng? Hành động này không thể hoàn tác!`)) return;
-    try {
-      const ids = filtered.map((c) => c.id || c._id).filter(Boolean);
-      await Promise.all(
-        ids.map((id) => client.delete(`/crm/customers/${id}`, { headers: authHeaders }))
-      );
-      setSelectedIds(new Set());
-      await fetchCustomers();
-      await fetchCustomerCount();
-    } catch (err) {
-      console.error(err);
-      alert(err.response?.data?.message || err.message || "Xóa thất bại");
     }
   };
 
@@ -266,6 +463,8 @@ export default function StaffCustomersPage() {
       phone: customer.phone || "",
       address: customer.address || "",
       status: customer.status || "lead",
+      ownerId: customer.ownerId || customer.owner_id || "",
+      ownerName: customer.ownerName || "",
     });
     setEditing(true);
   };
@@ -285,9 +484,11 @@ export default function StaffCustomersPage() {
           email: editForm.email.trim(),
           phone: editForm.phone.trim(),
           address: editForm.address.trim(),
-          status: editForm.status
+          status: editForm.status,
+          ...(role === "admin" && editForm.ownerId ? { ownerId: editForm.ownerId } : {}),
+          ...(role === "admin" && editForm.ownerName ? { ownerName: editForm.ownerName } : {}),
         },
-        { headers: authHeaders }
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
       );
       setEditing(false);
       setEditForm({
@@ -297,12 +498,77 @@ export default function StaffCustomersPage() {
         email: "",
         phone: "",
         address: "",
-        status: "lead"
+        status: "lead",
+        ownerId: "",
+        ownerName: "",
       });
       await fetchCustomers();
     } catch (err) {
       console.error(err);
       alert(err.response?.data?.message || err.message || "Cập nhật khách hàng thất bại");
+    }
+  };
+
+  const handleDelete = async (c) => {
+    const id = c.id || c._id;
+    if (!id) return;
+    if (!window.confirm(`Xóa khách hàng "${c.name}"?`)) return;
+    try {
+      await client.delete(`/crm/customers/${id}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+      await fetchCustomers();
+      await fetchCustomerCount();
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || err.message || "Xóa khách hàng thất bại");
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedIds.size === 0) return;
+    if (!window.confirm(`Xóa ${selectedIds.size} khách hàng đã chọn?`)) return;
+    try {
+      const ids = Array.from(selectedIds);
+      await Promise.all(
+        ids.map((id) =>
+          client.delete(`/crm/customers/${id}`, {
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+          })
+        )
+      );
+      setSelectedIds(new Set());
+      await fetchCustomers();
+      await fetchCustomerCount();
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || err.message || "Xóa thất bại");
+    }
+  };
+
+  const handleDeleteAll = async () => {
+    if (filtered.length === 0) return;
+    if (!window.confirm(`Xóa TẤT CẢ ${filtered.length} khách hàng? Hành động này không thể hoàn tác!`)) return;
+    try {
+      const ids = filtered.map((c) => c.id || c._id).filter(Boolean);
+      await Promise.all(
+        ids.map((id) =>
+          client.delete(`/crm/customers/${id}`, {
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+          })
+        )
+      );
+      setSelectedIds(new Set());
+      await fetchCustomers();
+      await fetchCustomerCount();
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || err.message || "Xóa thất bại");
     }
   };
 
@@ -323,152 +589,25 @@ export default function StaffCustomersPage() {
     }
   };
 
-  // ===== Import helpers (CSV/JSON) =====
-  const splitCsvLine = (line) => {
-    const out = [];
-    let cur = "";
-    let inQuotes = false;
-    for (let i = 0; i < line.length; i++) {
-      const ch = line[i];
-      if (ch === '"') {
-        if (inQuotes && line[i + 1] === '"') {
-          cur += '"';
-          i++;
-        } else {
-          inQuotes = !inQuotes;
-        }
-        continue;
-      }
-      if (ch === "," && !inQuotes) {
-        out.push(cur);
-        cur = "";
-        continue;
-      }
-      cur += ch;
-    }
-    out.push(cur);
-    return out.map((s) => String(s ?? "").trim());
-  };
-
-  const parseCsv = (text) => {
-    const cleaned = String(text || "").replace(/^\uFEFF/, "");
-    const lines = cleaned
-      .split(/\r?\n/)
-      .map((l) => l.trim())
-      .filter((l) => l.length > 0);
-    if (lines.length === 0) return [];
-
-    const headers = splitCsvLine(lines[0]).map((h) => h.toLowerCase().trim());
-    const idx = (key) => headers.findIndex((h) => h === key);
-    const nameIdx = idx("name");
-    if (nameIdx < 0) {
-      throw new Error('CSV thiếu cột "name" (bắt buộc). Ví dụ header: name,cccd,email,phone,address,status');
-    }
-
-    const cccdIdx = idx("cccd");
-    const emailIdx = idx("email");
-    const phoneIdx = idx("phone");
-    const addressIdx = idx("address");
-    const statusIdx = idx("status");
-
-    const rows = [];
-    for (let i = 1; i < lines.length; i++) {
-      const cols = splitCsvLine(lines[i]);
-      const name = String(cols[nameIdx] || "").trim();
-      if (!name) continue;
-      rows.push({
-        name,
-        cccd: cccdIdx >= 0 ? String(cols[cccdIdx] || "").trim() : "",
-        email: emailIdx >= 0 ? String(cols[emailIdx] || "").trim() : "",
-        phone: phoneIdx >= 0 ? String(cols[phoneIdx] || "").trim() : "",
-        address: addressIdx >= 0 ? String(cols[addressIdx] || "").trim() : "",
-        status: statusIdx >= 0 ? String(cols[statusIdx] || "").trim() : "lead",
-      });
-    }
-    return rows;
-  };
-
-  const parseJsonCustomers = (text) => {
-    const cleaned = String(text || "").replace(/^\uFEFF/, "");
-    const data = JSON.parse(cleaned);
-    const arr = Array.isArray(data) ? data : data?.customers;
-    if (!Array.isArray(arr)) {
-      throw new Error('JSON phải là mảng hoặc { "customers": [...] }');
-    }
-    return arr
-      .map((c) => ({
-        name: String(c?.name || c?.full_name || c?.fullName || "").trim(),
-        cccd: String(c?.cccd || "").trim(),
-        email: String(c?.email || "").trim(),
-        phone: String(c?.phone || "").trim(),
-        address: String(c?.address || "").trim(),
-        status: String(c?.status || "lead").trim(),
-      }))
-      .filter((c) => c.name);
-  };
-
-  const handlePickImportFile = () => {
-    setImportErr("");
-    setImportReport(null);
-    setImportPreview([]);
-    setImportModal(true);
-  };
-
-  const handleFileChange = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setImportErr("");
-    setImportReport(null);
-    try {
-      const text = await file.text();
-      const ext = (file.name.split(".").pop() || "").toLowerCase();
-      const parsed = ext === "json" ? parseJsonCustomers(text) : ext === "csv" ? parseCsv(text) : null;
-      if (!parsed) throw new Error("Chỉ hỗ trợ file .json hoặc .csv");
-      setImportPreview(parsed);
-    } catch (err) {
-      console.error(err);
-      setImportPreview([]);
-      setImportErr(err?.message || "Không đọc/parse được file");
-    } finally {
-      e.target.value = "";
-    }
-  };
-
-  const handleImport = async () => {
-    if (importPreview.length === 0) {
-      setImportErr("Không có dữ liệu để import.");
-      return;
-    }
-    setImporting(true);
-    setImportErr("");
-    setImportReport(null);
-    try {
-      const { data } = await client.post(
-        "/crm/customers/import",
-        { customers: importPreview },
-        { headers: authHeaders }
-      );
-      setImportReport(data || null);
-      await fetchCustomers();
-    } catch (err) {
-      console.error(err);
-      setImportErr(err.response?.data?.message || err.message || "Import thất bại");
-    } finally {
-      setImporting(false);
-    }
+  const statusBadge = (st) => {
+    const s = st || "lead";
+    if (s === "active") return "bg-emerald-100 text-emerald-700 border border-emerald-200";
+    if (s === "inactive") return "bg-slate-100 text-slate-600 border border-slate-200";
+    return "bg-amber-100 text-amber-700 border border-amber-200";
   };
 
   return (
-    <div className="h-screen bg-white text-slate-900 flex overflow-hidden">
-      <StaffSidebar />
+    <div className="h-screen bg-slate-100 text-slate-800 flex overflow-hidden">
+      <AdminSidebar />
 
-      <main className="flex-1 bg-slate-50 p-8 space-y-6 overflow-y-auto">
+      {/* Main */}
+      <main className="flex-1 p-8 space-y-6 overflow-y-auto">
         <header className="flex items-center justify-between">
           <div>
-            <p className="text-sm text-slate-500">Khách hàng</p>
-            <h1 className="text-2xl font-bold text-slate-900">Danh sách khách hàng của tôi</h1>
+            <p className="text-sm text-slate-500">CRM</p>
+            <h1 className="text-2xl font-bold text-slate-900">Khách hàng</h1>
             <p className="text-sm text-slate-500">
-              Nhân viên chỉ xem và quản lý khách hàng do mình phụ trách (owner-based).
+              Quản lý khách hàng (MVP). Nếu CRM service chưa chạy, trang vẫn không bị lỗi.
             </p>
           </div>
           <div className="text-sm text-slate-500 text-right">
@@ -479,8 +618,12 @@ export default function StaffCustomersPage() {
 
         {error && (
           <div className="bg-amber-50 border border-amber-200 text-amber-900 rounded-2xl p-4">
-            <div className="font-semibold">Không thể tải danh sách</div>
+            <div className="font-semibold">Không thể tải CRM</div>
             <div className="text-sm mt-1">{error}</div>
+            <div className="text-xs mt-2 text-amber-800/80">
+              Gợi ý: chạy backend CRM tại <code className="font-mono">backend-hrmSOA/services/crm-service</code> (port 5007)
+              và gateway sẽ proxy qua <code className="font-mono">/crm</code>.
+            </div>
           </div>
         )}
 
@@ -494,6 +637,17 @@ export default function StaffCustomersPage() {
               className="w-full outline-none text-sm text-slate-700"
             />
           </div>
+
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 shadow-sm hover:border-indigo-200 cursor-pointer"
+          >
+            <option value="all">Tất cả trạng thái</option>
+            <option value="lead">Lead</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
 
           <button
             onClick={fetchCustomers}
@@ -527,7 +681,7 @@ export default function StaffCustomersPage() {
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="p-4 border-b border-slate-200 flex items-center justify-between flex-wrap gap-3">
             <div className="font-semibold text-slate-800">
-              Danh sách{" "}
+              Danh sách khách hàng{" "}
               <span className="text-slate-500 text-sm font-normal">
                 ({customerCount || filtered.length})
               </span>
@@ -575,6 +729,7 @@ export default function StaffCustomersPage() {
                   <th className="text-left px-4 py-3 font-semibold">Email</th>
                   <th className="text-left px-4 py-3 font-semibold">SĐT</th>
                   <th className="text-left px-4 py-3 font-semibold">Địa chỉ</th>
+                  <th className="text-left px-4 py-3 font-semibold">Người phụ trách</th>
                   <th className="text-left px-4 py-3 font-semibold">Trạng thái</th>
                   <th className="text-right px-4 py-3 font-semibold">Hành động</th>
                 </tr>
@@ -582,7 +737,7 @@ export default function StaffCustomersPage() {
               <tbody>
                 {!loading && filtered.length === 0 && (
                   <tr>
-                    <td className="px-4 py-6 text-slate-500" colSpan={8}>
+                    <td className="px-4 py-6 text-slate-500" colSpan={9}>
                       Chưa có khách hàng nào.
                     </td>
                   </tr>
@@ -605,12 +760,28 @@ export default function StaffCustomersPage() {
                       <td className="px-4 py-3 text-slate-600">{c.email || "-"}</td>
                       <td className="px-4 py-3 text-slate-600">{c.phone || "-"}</td>
                       <td className="px-4 py-3 text-slate-600">{c.address || "-"}</td>
+                      <td className="px-4 py-3 text-slate-600">
+                        {(() => {
+                          const ownerId = c.ownerId || c.owner_id || c.owner || "";
+                          if (!ownerId) return role === "admin" ? "Admin" : "Bạn";
+                          if (role !== "admin") return "Bạn";
+                          const emp = employees.find(
+                            (e) => String(e.id || e.userId || e._id || "") === String(ownerId)
+                          );
+                          const profile = emp?.profile || {};
+                          const fullName =
+                            emp?.full_name ||
+                            emp?.fullName ||
+                            profile.full_name ||
+                            profile.fullName ||
+                            emp?.name ||
+                            "";
+                          const email = emp?.email || profile.email || "";
+                          return fullName || email || "Admin";
+                        })()}
+                      </td>
                       <td className="px-4 py-3">
-                        <span
-                          className={`inline-flex items-center px-2 py-1 rounded-lg text-xs font-semibold ${statusBadge(
-                            c.status
-                          )}`}
-                        >
+                        <span className={`inline-flex items-center px-2 py-1 rounded-lg text-xs font-semibold ${statusBadge(c.status)}`}>
                           {c.status || "lead"}
                         </span>
                       </td>
@@ -686,6 +857,37 @@ export default function StaffCustomersPage() {
                     <option value="inactive">inactive</option>
                   </select>
                 </div>
+
+                {role === "admin" && (
+                  <div>
+                    <label className="text-sm text-slate-600 font-medium">Phụ trách (owner)</label>
+                    <select
+                      className="w-full border rounded-lg px-3 py-2 bg-slate-50"
+                      value={addForm.ownerId}
+                      onChange={(e) => setAddForm((p) => ({ ...p, ownerId: e.target.value }))}
+                    >
+                      <option value="">-- Không gán (chỉ admin thấy) --</option>
+                      {employees.map((emp) => {
+                        const profile = emp.profile || {};
+                        const fullName =
+                          emp.full_name ||
+                          emp.fullName ||
+                          profile.full_name ||
+                          profile.fullName ||
+                          emp.name ||
+                          "";
+                        return (
+                          <option key={emp.id || emp.userId || emp._id} value={emp.id || emp.userId || emp._id}>
+                            {fullName || emp.email || "Nhân viên"} ({emp.email || profile.email || ""})
+                          </option>
+                        );
+                      })}
+                    </select>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Để trống: chỉ admin thấy. Chọn nhân viên: họ sẽ thấy khách hàng này.
+                    </p>
+                  </div>
+                )}
 
                 <div>
                   <label className="text-sm text-slate-600 font-medium">Email</label>
@@ -781,6 +983,34 @@ export default function StaffCustomersPage() {
                   </select>
                 </div>
 
+                {role === "admin" && (
+                  <div>
+                    <label className="text-sm text-slate-600 font-medium">Phụ trách (owner)</label>
+                    <select
+                      className="w-full border rounded-lg px-3 py-2 bg-slate-50"
+                      value={editForm.ownerId}
+                      onChange={(e) => setEditForm((p) => ({ ...p, ownerId: e.target.value }))}
+                    >
+                      <option value="">-- Không gán (chỉ admin thấy) --</option>
+                      {employees.map((emp) => {
+                        const profile = emp.profile || {};
+                        const fullName =
+                          emp.full_name ||
+                          emp.fullName ||
+                          profile.full_name ||
+                          profile.fullName ||
+                          emp.name ||
+                          "";
+                        return (
+                          <option key={emp.id || emp.userId || emp._id} value={emp.id || emp.userId || emp._id}>
+                            {fullName || emp.email || "Nhân viên"} ({emp.email || profile.email || ""})
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </div>
+                )}
+
                 <div>
                   <label className="text-sm text-slate-600 font-medium">Email</label>
                   <input
@@ -810,6 +1040,7 @@ export default function StaffCustomersPage() {
                     placeholder="VD: 123 Nguyễn Trãi, Q1..."
                   />
                 </div>
+
               </div>
 
               <div className="flex justify-end gap-2 pt-2">
@@ -832,17 +1063,22 @@ export default function StaffCustomersPage() {
 
         {/* Log modal */}
         {logModal.open && (
-          <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl p-6 space-y-4">
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-[1px] flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl p-6 space-y-4 border border-slate-100">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <h3 className="text-xl font-bold text-slate-800">Nhật ký khách hàng</h3>
+                  <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                    📜 Nhật ký khách hàng
+                    <span className="text-xs font-medium px-2 py-1 rounded-full bg-slate-100 text-slate-600">
+                      Tối đa 50 log mới nhất
+                    </span>
+                  </h3>
                   <p className="text-sm text-slate-500">
-                    {logModal.customer?.name || "Khách hàng"} • Hiển thị tối đa 50 log gần nhất
+                    {logModal.customer?.name || "Khách hàng"}
                   </p>
                 </div>
                 <button
-                  className="text-slate-500 hover:text-slate-800"
+                  className="text-slate-500 hover:text-slate-800 text-lg"
                   onClick={() => setLogModal((p) => ({ ...p, open: false }))}
                 >
                   ✕
@@ -855,49 +1091,61 @@ export default function StaffCustomersPage() {
                 </div>
               )}
 
-              <div className="max-h-[460px] overflow-y-auto divide-y divide-slate-100">
+              <div className="max-h-[560px] overflow-y-auto space-y-4 pr-1">
                 {logModal.loading && <p className="text-sm text-slate-500 py-2">Đang tải...</p>}
                 {!logModal.loading && logModal.items.length === 0 && (
                   <p className="text-sm text-slate-500 py-2">Chưa có nhật ký.</p>
                 )}
-                {logModal.items.map((log) => (
-                  <div key={log.id} className="py-3 flex flex-col gap-1">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-sm text-slate-700">
-                        <span className="font-semibold text-indigo-600">{log.actorEmail || "N/A"}</span>
-                        <span className="text-slate-400">•</span>
-                        <span className="capitalize font-semibold">{log.action}</span>
+                {logModal.items.map((log, idx) => (
+                  <div
+                    key={log.id || idx}
+                    className="border border-slate-100 rounded-xl p-4 bg-gradient-to-br from-white to-slate-50 shadow-sm flex gap-3"
+                  >
+                    <div className="flex flex-col items-center gap-1">
+                      <div className="w-10 h-10 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center text-lg">
+                        {actionIcon(log.action)}
                       </div>
-                      <div className="text-xs text-slate-500">
-                        {log.createdAt
-                          ? new Date(log.createdAt).toLocaleString("vi-VN")
-                          : new Date(log.updatedAt || "").toLocaleString("vi-VN")}
-                      </div>
+                      <div className="flex-1 w-px bg-slate-200" />
                     </div>
-                    {log.meta && (
-                      <div className="text-xs text-slate-500">
-                        {log.meta.created !== undefined && (
-                          <span className="mr-2">Tạo: {log.meta.created}</span>
-                        )}
-                        {log.meta.skipped !== undefined && (
-                          <span className="mr-2">Bỏ qua: {log.meta.skipped}</span>
-                        )}
-                        {log.meta.errors !== undefined && <span>Lỗi: {log.meta.errors}</span>}
+                    <div className="flex-1 space-y-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="space-y-1">
+                          <div className="flex flex-wrap items-center gap-2 text-sm">
+                            <span className="font-semibold text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-1 rounded-lg">
+                              {log.actorEmail || "N/A"}
+                            </span>
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-xs font-semibold border flex items-center gap-1 ${actionStyle(
+                                log.action
+                              )}`}
+                            >
+                              {actionIcon(log.action)} {log.action || "action"}
+                            </span>
+                          </div>
+                          {log.meta && (
+                            <div className="text-xs text-slate-600 flex flex-wrap gap-3">
+                              {log.meta.created !== undefined && <span>Tạo: {log.meta.created}</span>}
+                              {log.meta.skipped !== undefined && <span>Bỏ qua: {log.meta.skipped}</span>}
+                              {log.meta.errors !== undefined && <span>Lỗi: {log.meta.errors}</span>}
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-xs text-slate-500 whitespace-nowrap bg-slate-100 px-2 py-1 rounded-lg border border-slate-200">
+                          {log.createdAt
+                            ? new Date(log.createdAt).toLocaleString("vi-VN")
+                            : new Date(log.updatedAt || "").toLocaleString("vi-VN")}
+                        </div>
                       </div>
-                    )}
-                    <div className="text-xs text-slate-500 break-words">
-                      {log.before && (
-                        <span className="mr-2">
-                          Trước: <code className="bg-slate-50 px-1 rounded">{JSON.stringify(log.before)}</code>
-                        </span>
+
+                      {(log.before || log.after) && (
+                        <div className="grid md:grid-cols-2 gap-3 text-xs">
+                          {log.before && renderLogCard(log.before, "Trước")}
+                          {log.after && renderLogCard(log.after, "Sau")}
+                        </div>
                       )}
-                      {log.after && (
-                        <span>
-                          Sau: <code className="bg-slate-50 px-1 rounded">{JSON.stringify(log.after)}</code>
-                        </span>
-                      )}
+
                       {!log.before && !log.after && !log.meta && (
-                        <span className="text-slate-400">Không có chi tiết.</span>
+                        <div className="text-xs text-slate-400">Không có chi tiết.</div>
                       )}
                     </div>
                   </div>
@@ -1024,5 +1272,7 @@ export default function StaffCustomersPage() {
     </div>
   );
 }
+
+export default CRMPage;
 
 

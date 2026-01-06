@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import ProfilePage from "./ProfilePage";
-import StaffSidebar from "../components/StaffSidebar";
+import ProfilePage from "../ProfilePage";
+import StaffSidebar from "../../components/StaffSidebar";
 
 export default function StaffProfilePage() {
   const [editMode, setEditMode] = useState(false);

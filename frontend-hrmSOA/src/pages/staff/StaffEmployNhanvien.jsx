@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
-import StaffSidebar from "../components/StaffSidebar";
+import { useAuth } from "../../context/AuthContext";
+import StaffSidebar from "../../components/StaffSidebar";
 
 export default function StaffEmployNhanvien() {
   const { client, user } = useAuth();

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
-import EmployeeTable from "../components/EmployeeTable";
-import { useAuth } from "../context/AuthContext";
-import AdminSidebar from "../components/AdminSidebar";
+import EmployeeTable from "../../components/EmployeeTable";
+import { useAuth } from "../../context/AuthContext";
+import AdminSidebar from "../../components/AdminSidebar";
 
 function AdminPage() {
   const { client } = useAuth();

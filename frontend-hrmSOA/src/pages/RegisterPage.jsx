@@ -1,16 +1,19 @@
 import React, { useState } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import logo from '../assets/logo.png';
 
-function LoginPage() {
-  const { client, setToken, setRole, setUser } = useAuth();
+function RegisterPage() {
+  const { client } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
 
+  const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const EyeIcon = ({ closed = false }) => (
     <svg
@@ -39,27 +42,6 @@ function LoginPage() {
       )}
     </svg>
   );
-  const [loading, setLoading] = useState(false);
-  const registerSuccess = location.state?.registerSuccess;
-
-  //  FIX: redirect an toàn theo role (tránh admin bị redirect vào staff route)
-  const getSafeRedirect = (role) => {
-    const fromPath = location.state?.from?.pathname || '/home';
-
-    // Admin không quay lại trang staff
-    if (role === 'admin') {
-      if (fromPath.startsWith('/staff')) return '/home';
-      return fromPath; // /home /admin /departments /payroll...
-    }
-
-    // Staff không quay lại trang admin/payroll
-    if (fromPath.startsWith('/admin') || fromPath.startsWith('/payroll')) return '/home';
-
-    // Staff không đi vào /departments (page admin) => chuyển về staff departments
-    if (fromPath.startsWith('/departments')) return '/staff/departments';
-
-    return fromPath;
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -68,25 +50,22 @@ function LoginPage() {
       alert('Mật khẩu phải có ít nhất 8 ký tự.');
       return;
     }
+    if (password !== confirmPassword) {
+      alert('Mật khẩu nhập lại không khớp.');
+      return;
+    }
 
     setLoading(true);
     try {
-      const { data } = await client.post('/auth/login', { email, password });
+      await client.post('/auth/register', {
+        email,
+        password,
+        confirm_password: confirmPassword,
+        full_name: fullName,
+      });
 
-      // token có thể là accessToken
-      const token = data.accessToken || data.token;
-      const role = data.role;
-
-      setToken(token);
-      setRole(role);
-      setUser({ email, role });
-
-      //  redirect an toàn theo role
-      const redirect = getSafeRedirect(role);
-
-      // QUAN TRỌNG: xóa state.from để lần sau không bị dính lại
-      navigate(redirect, { replace: true, state: {} });
-      window.history.replaceState({}, document.title);
+      alert('Đăng ký thành công! Vui lòng đăng nhập để tiếp tục.');
+      navigate('/login', { replace: true, state: { registerSuccess: true } });
     } catch (err) {
       alert(err.response?.data?.message || err.message);
     } finally {
@@ -103,20 +82,26 @@ function LoginPage() {
             <div className="w-16 h-16 mb-4">
               <img src={logo} alt="Logo" className="w-full h-full object-contain" />
             </div>
-            <h1 className="text-3xl font-bold text-slate-800 tracking-tight mb-2">
-              Chào mừng trở lại!
-            </h1>
-            <p className="text-slate-500">
-              Vui lòng nhập thông tin đăng nhập để tiếp tục.
-            </p>
+            <h1 className="text-3xl font-bold text-slate-800 tracking-tight mb-2">Tạo tài khoản mới</h1>
+            <p className="text-slate-500">Tham gia hệ thống quản trị .</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            {registerSuccess && (
-              <div className="bg-emerald-50 border border-emerald-100 text-emerald-700 text-sm px-3 py-2 rounded-xl">
-                Đăng ký thành công! Vui lòng đăng nhập.
+            <div className="space-y-1.5">
+              <label className="text-sm font-semibold text-slate-700">Họ và tên</label>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">👤</span>
+                <input
+                  type="text"
+                  required
+                  placeholder="Nguyễn Văn A"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3.5 pl-11 pr-4 outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all font-medium text-slate-700"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                />
               </div>
-            )}
+            </div>
+
             <div className="space-y-1.5">
               <label className="text-sm font-semibold text-slate-700">Email</label>
               <div className="relative">
@@ -156,20 +141,44 @@ function LoginPage() {
               </div>
             </div>
 
+            <div className="space-y-1.5">
+              <label className="text-sm font-semibold text-slate-700">Nhập lại mật khẩu</label>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">🔒</span>
+                <input
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  required
+                  minLength={8}
+                  placeholder="••••••••"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3.5 pl-11 pr-12 outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all font-medium text-slate-700"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword((prev) => !prev)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none"
+                  aria-label={showConfirmPassword ? 'Ẩn xác nhận mật khẩu' : 'Hiển thị xác nhận mật khẩu'}
+                >
+                  <EyeIcon closed={showConfirmPassword} />
+                </button>
+              </div>
+            </div>
+
             <button
               type="submit"
               disabled={loading}
               className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-60"
             >
-              {loading ? 'Đang xử lý...' : 'Đăng nhập'}
+              {loading ? 'Đang xử lý...' : 'Đăng ký'}
             </button>
           </form>
 
           <div className="mt-8 text-center">
             <p className="text-slate-500 font-medium">
-              Chưa có tài khoản?{' '}
-              <Link to="/register" className="text-indigo-600 font-bold hover:underline">
-                Đăng ký ngay
+              Đã có tài khoản?{' '}
+              <Link to="/login" className="text-indigo-600 font-bold hover:underline">
+                Đăng nhập
               </Link>
             </p>
           </div>
@@ -182,10 +191,10 @@ function LoginPage() {
 
           <div className="relative z-10">
             <div className="bg-white/10 backdrop-blur-md inline-flex px-4 py-2 rounded-full text-sm font-medium border border-white/10 mb-6">
-              ✨ HRM-CRM MVP System
+              ✨ HRM SOA System v2.0
             </div>
             <h2 className="text-4xl font-bold leading-tight mb-6">
-              Quản trị CRM & HRM <br />
+              Quản trị nhân sự <br />
               Hiệu quả &amp; Tinh gọn.
             </h2>
             <p className="text-indigo-100 text-lg leading-relaxed max-w-sm">
@@ -197,7 +206,7 @@ function LoginPage() {
             <div className="flex items-center gap-4 bg-white/10 backdrop-blur-sm p-4 rounded-2xl border border-white/10">
               <div className="p-2 bg-emerald-500 rounded-lg shadow-lg"></div>
               <div>
-                <p className="font-bold text-sm">Quản lý lương tự động</p>
+                <p className="font-bold text-sm">Quản lý tự động</p>
                 <p className="text-xs text-indigo-100">Chính xác tuyệt đối</p>
               </div>
             </div>
@@ -215,4 +224,5 @@ function LoginPage() {
   );
 }
 
-export default LoginPage;
+export default RegisterPage;
+

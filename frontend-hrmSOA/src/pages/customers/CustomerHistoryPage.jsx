@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useAuth } from "../context/AuthContext";
-import AdminSidebar from "../components/AdminSidebar";
-import StaffSidebar from "../components/StaffSidebar";
+import { useAuth } from "../../context/AuthContext";
+import AdminSidebar from "../../components/AdminSidebar";
+import StaffSidebar from "../../components/StaffSidebar";
 
 function CustomerHistoryPage() {
   const { client, token, role } = useAuth();

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useAuth } from '../context/AuthContext';
-import AdminSidebar from '../components/AdminSidebar';
+import { useAuth } from '../../context/AuthContext';
+import AdminSidebar from '../../components/AdminSidebar';
 
 function PayrollPage() {
   const { client } = useAuth();

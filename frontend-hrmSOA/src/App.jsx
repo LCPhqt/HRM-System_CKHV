@@ -3,20 +3,21 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 
 import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/RegisterPage";
 import HomePage from "./pages/HomePage";
 import ProfilePage from "./pages/ProfilePage";
-import AdminPage from "./pages/AdminPage";
-import PayrollPage from "./pages/PayrollPage";
-import CRMPage from "./pages/CRMPage";
+import AdminPage from "./pages/admin/AdminPage";
+import PayrollPage from "./pages/admin/PayrollPage";
+import CRMPage from "./pages/customers/CRMPage";
 import ProtectedRoute from "./components/ProtectedRoute";
-import DepartmentPage from "./pages/DepartmentPage";
+import DepartmentPage from "./pages/admin/DepartmentPage";
 
 //  STAFF
-import StaffProfilePage from "./pages/StaffProfilePage";
-import StaffDepartNhanVien from "./pages/StaffDepartNhanVien";
-import StaffEmployNhanvien from "./pages/StaffEmployNhanvien";
-import StaffCustomersPage from "./pages/StaffCustomersPage";
-import CustomerHistoryPage from "./pages/CustomerHistoryPage";
+import StaffProfilePage from "./pages/staff/StaffProfilePage";
+import StaffDepartNhanVien from "./pages/staff/StaffDepartNhanVien";
+import StaffEmployNhanvien from "./pages/staff/StaffEmployNhanvien";
+import StaffCustomersPage from "./pages/customers/StaffCustomersPage";
+import CustomerHistoryPage from "./pages/customers/CustomerHistoryPage";
 
 function DepartmentGate() {
   const { role } = useAuth();
@@ -30,6 +31,7 @@ function AppShell() {
       <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
 
         <Route
           path="/home"
