@@ -11,16 +11,16 @@ export default function AdminSidebar() {
   const menu = [
     { label: "Tổng quan", icon: "📊", path: "/home" },
     { label: "Nhân viên", icon: "👥", path: "/admin" },
-    { label: "Khách hàng", icon: "🤝", path: "/crm" },
-    { label: "Lịch sử khách hàng", icon: "🕒", path: "/crm/history" },
+    { label: "Khách hàng", icon: "🤝", path: "/client" },
+    { label: "Lịch sử khách hàng", icon: "🕒", path: "/client/history" },
     { label: "Phòng ban", icon: "🏢", path: "/departments" },
     { label: "Lương thưởng", icon: "💰", path: "/payroll" },
   ];
 
   const isActive = (path) => {
-    if (path === "/crm") {
-      // Chỉ sáng mục "Khách hàng" khi đúng trang /crm (không sáng khi đang ở /crm/history)
-      return location.pathname === "/crm";
+    if (path === "/client") {
+      // Chỉ sáng mục "Khách hàng" khi đúng trang /client (không sáng khi đang ở /client/history)
+      return location.pathname === "/client";
     }
     return location.pathname.startsWith(path);
   };

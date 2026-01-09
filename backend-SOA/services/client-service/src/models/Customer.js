@@ -1,0 +1,23 @@
+const mongoose = require("mongoose");
+
+const customerSchema = new mongoose.Schema(
+  {
+    cccd: { type: String, default: "" },
+    name: { type: String, required: true },
+    email: { type: String, default: "" },
+    phone: { type: String, default: "" },
+    address: { type: String, default: "" },
+    ownerId: { type: String, default: "" },
+    ownerName: { type: String, default: "" },
+    status: { type: String, enum: ["active", "inactive", "lead"], default: "lead" },
+    tags: { type: [String], default: [] },
+    deleted: { type: Boolean, default: false },
+    deletedAt: { type: Date, default: null },
+    deletedBy: { type: String, default: "" },
+    deletedByEmail: { type: String, default: "" }
+  },
+  { timestamps: true }
+);
+
+module.exports = mongoose.model("Customer", customerSchema);
+

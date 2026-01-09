@@ -128,7 +128,7 @@ function AppShell() {
         />
 
         <Route
-          path="/crm"
+          path="/client"
           element={
             <ProtectedRoute role="admin">
               <CRMPage />
@@ -136,7 +136,7 @@ function AppShell() {
           }
         />
         <Route
-          path="/crm/history"
+          path="/client/history"
           element={
             <ProtectedRoute role="admin">
               <CustomerHistoryPage />

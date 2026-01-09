@@ -23,7 +23,7 @@ function HomePage() {
   //  routes theo role
   const employeesPath = role === "admin" ? "/admin" : "/staff/employees";
   const departmentsPath = role === "admin" ? "/departments" : "/staff/departments";
-  const customersPath = role === "admin" ? "/crm" : "/staff/customers";
+  const customersPath = role === "admin" ? "/client" : "/staff/customers";
 
   useEffect(() => {
     const load = async () => {
@@ -43,11 +43,11 @@ function HomePage() {
         //  CRM: thống kê trạng thái (role-sensitive, staff chỉ thấy của mình)
         try {
           const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
-          const statsRes = await client.get("/crm/customers/stats", { headers: authHeaders });
+          const statsRes = await client.get("/client/customers/stats", { headers: authHeaders });
           const stats = statsRes.data || {};
 
           // fallback tính lại từ danh sách (tối đa 500) để bảo đảm khớp hiển thị
-          const listRes = await client.get("/crm/customers", {
+          const listRes = await client.get("/client/customers", {
             params: { page: 1, limit: 500 },
             headers: authHeaders,
           });

@@ -177,7 +177,7 @@ function CRMPage() {
     setImportReport(null);
     try {
       const { data } = await client.post(
-        "/crm/customers/import",
+        "/client/customers/import",
         { customers: importPreview },
         { headers: token ? { Authorization: `Bearer ${token}` } : {} }
       );
@@ -195,7 +195,7 @@ function CRMPage() {
     setLoading(true);
     setError("");
     try {
-      const { data } = await client.get("/crm/customers", {
+      const { data } = await client.get("/client/customers", {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         params: { page: 1, limit: 500 }, // tăng limit để tránh chỉ lấy 50 mặc định
       });
@@ -304,7 +304,7 @@ function CRMPage() {
     if (!id) return;
     setLogModal((p) => ({ ...p, open: true, loading: true, customer, error: "", items: [] }));
     try {
-      const { data } = await client.get(`/crm/customers/${id}/logs`, {
+      const { data } = await client.get(`/client/customers/${id}/logs`, {
         params: { page: 1, limit: 50 },
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
@@ -322,7 +322,7 @@ function CRMPage() {
 
   const fetchCustomerCount = async () => {
     try {
-      const { data } = await client.get("/crm/customers/count", {
+      const { data } = await client.get("/client/customers/count", {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (typeof data?.count === "number") setCustomerCount(data.count);
@@ -422,7 +422,7 @@ function CRMPage() {
 
     try {
       await client.post(
-        "/crm/customers",
+        "/client/customers",
         {
           cccd: addForm.cccd.trim(),
           name: addForm.name.trim(),
@@ -477,7 +477,7 @@ function CRMPage() {
 
     try {
       await client.put(
-        `/crm/customers/${editForm.id}`,
+        `/client/customers/${editForm.id}`,
         {
           cccd: editForm.cccd.trim(),
           name: editForm.name.trim(),
@@ -514,7 +514,7 @@ function CRMPage() {
     if (!id) return;
     if (!window.confirm(`Xóa khách hàng "${c.name}"?`)) return;
     try {
-      await client.delete(`/crm/customers/${id}`, {
+      await client.delete(`/client/customers/${id}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       setSelectedIds((prev) => {
@@ -537,7 +537,7 @@ function CRMPage() {
       const ids = Array.from(selectedIds);
       await Promise.all(
         ids.map((id) =>
-          client.delete(`/crm/customers/${id}`, {
+          client.delete(`/client/customers/${id}`, {
             headers: token ? { Authorization: `Bearer ${token}` } : {},
           })
         )
@@ -558,7 +558,7 @@ function CRMPage() {
       const ids = filtered.map((c) => c.id || c._id).filter(Boolean);
       await Promise.all(
         ids.map((id) =>
-          client.delete(`/crm/customers/${id}`, {
+          client.delete(`/client/customers/${id}`, {
             headers: token ? { Authorization: `Bearer ${token}` } : {},
           })
         )
@@ -621,8 +621,8 @@ function CRMPage() {
             <div className="font-semibold">Không thể tải CRM</div>
             <div className="text-sm mt-1">{error}</div>
             <div className="text-xs mt-2 text-amber-800/80">
-              Gợi ý: chạy backend CRM tại <code className="font-mono">backend-hrmSOA/services/crm-service</code> (port 5007)
-              và gateway sẽ proxy qua <code className="font-mono">/crm</code>.
+              Gợi ý: chạy backend Client tại <code className="font-mono">backend-SOA/services/client-service</code> (port 5007)
+              và gateway sẽ proxy qua <code className="font-mono">/client</code>.
             </div>
           </div>
         )}

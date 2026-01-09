@@ -375,8 +375,8 @@ async function testAdminSidebarNavigation() {
   const menuItems = [
     { label: 'Tổng quan', path: '/home' },
     { label: 'Nhân viên', path: '/admin' },
-    { label: 'Khách hàng', path: '/crm' },
-    { label: 'Lịch sử khách hàng', path: '/crm/history' },
+    { label: 'Khách hàng', path: '/client' },
+    { label: 'Lịch sử khách hàng', path: '/client/history' },
     { label: 'Phòng ban', path: '/departments' },
     { label: 'Lương thưởng', path: '/payroll' },
   ];

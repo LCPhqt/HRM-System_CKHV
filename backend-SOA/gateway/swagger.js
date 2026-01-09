@@ -11,12 +11,12 @@ const options = {
   definition: {
     openapi: '3.0.3',
     info: {
-      title: 'HRM-CRM-MVP API Documentation',
+      title: 'HRM-Client-MVP API Documentation',
       version: '1.0.0',
       description: `
-## 🏢 Hệ thống quản lý Nhân sự (HRM) và Khách hàng (CRM)
+## 🏢 Hệ thống quản lý Nhân sự (HRM) và Khách hàng (Client)
 
-Đây là tài liệu API cho hệ thống HRM-CRM-MVP được xây dựng theo kiến trúc **Service-Oriented Architecture (SOA)**.
+Đây là tài liệu API cho hệ thống HRM-Client-MVP được xây dựng theo kiến trúc **Service-Oriented Architecture (SOA)**.
 
 ### 📦 Các Service:
 - **Identity Service** (Port 5001): Xác thực và quản lý user
@@ -24,7 +24,7 @@ const options = {
 - **Admin HR Service** (Port 5003): Quản lý nhân sự cho Admin
 - **Payroll Service** (Port 5004): Quản lý bảng lương
 - **Department Service** (Port 5006): Quản lý phòng ban
-- **CRM Service** (Port 5007): Quản lý khách hàng
+- **Client Service** (Port 5007): Quản lý khách hàng
 
 ### 🔐 Xác thực:
 Sử dụng **JWT Bearer Token**. Sau khi đăng nhập, thêm token vào header:
@@ -50,7 +50,7 @@ Authorization: Bearer <your_token>
       { name: 'Departments', description: 'Quản lý phòng ban' },
       { name: 'Employees', description: 'Quản lý nhân viên (Admin only)' },
       { name: 'Payroll', description: 'Quản lý bảng lương (Admin only)' },
-      { name: 'CRM', description: 'Quản lý khách hàng' }
+      { name: 'Clients', description: 'Quản lý khách hàng' }
     ],
     components: {
       securitySchemes: {
@@ -803,10 +803,10 @@ Authorization: Bearer <your_token>
         }
       },
 
-      // ============ CRM ENDPOINTS ============
-      '/crm/customers': {
+      // ============ CLIENT ENDPOINTS ============
+      '/client/customers': {
         get: {
-          tags: ['CRM'],
+          tags: ['Clients'],
           summary: 'Danh sách khách hàng',
           description: 'Staff chỉ xem khách hàng của mình, Admin xem tất cả',
           security: [{ bearerAuth: [] }],
@@ -822,7 +822,7 @@ Authorization: Bearer <your_token>
           }
         },
         post: {
-          tags: ['CRM'],
+          tags: ['Clients'],
           summary: 'Tạo khách hàng mới',
           security: [{ bearerAuth: [] }],
           requestBody: {
@@ -835,9 +835,9 @@ Authorization: Bearer <your_token>
           }
         }
       },
-      '/crm/customers/count': {
+      '/client/customers/count': {
         get: {
-          tags: ['CRM'],
+          tags: ['Clients'],
           summary: 'Đếm số lượng khách hàng',
           security: [{ bearerAuth: [] }],
           parameters: [
@@ -852,9 +852,9 @@ Authorization: Bearer <your_token>
           }
         }
       },
-      '/crm/customers/stats': {
+      '/client/customers/stats': {
         get: {
-          tags: ['CRM'],
+          tags: ['Clients'],
           summary: 'Thống kê khách hàng theo trạng thái',
           security: [{ bearerAuth: [] }],
           parameters: [
@@ -865,9 +865,9 @@ Authorization: Bearer <your_token>
           }
         }
       },
-      '/crm/customers/deleted': {
+      '/client/customers/deleted': {
         get: {
-          tags: ['CRM'],
+          tags: ['Clients'],
           summary: 'Danh sách khách hàng đã xóa (Admin)',
           security: [{ bearerAuth: [] }],
           parameters: [
@@ -880,9 +880,9 @@ Authorization: Bearer <your_token>
           }
         }
       },
-      '/crm/customers/import': {
+      '/client/customers/import': {
         post: {
-          tags: ['CRM'],
+          tags: ['Clients'],
           summary: 'Import nhiều khách hàng',
           security: [{ bearerAuth: [] }],
           requestBody: {
@@ -903,9 +903,9 @@ Authorization: Bearer <your_token>
           }
         }
       },
-      '/crm/customers/restore/bulk': {
+      '/client/customers/restore/bulk': {
         post: {
-          tags: ['CRM'],
+          tags: ['Clients'],
           summary: 'Khôi phục nhiều khách hàng (Admin)',
           security: [{ bearerAuth: [] }],
           requestBody: {
@@ -929,9 +929,9 @@ Authorization: Bearer <your_token>
           }
         }
       },
-      '/crm/customers/hard/bulk': {
+      '/client/customers/hard/bulk': {
         post: {
-          tags: ['CRM'],
+          tags: ['Clients'],
           summary: 'Xóa vĩnh viễn nhiều khách hàng (Admin)',
           security: [{ bearerAuth: [] }],
           requestBody: {
@@ -955,9 +955,9 @@ Authorization: Bearer <your_token>
           }
         }
       },
-      '/crm/customers/{id}': {
+      '/client/customers/{id}': {
         get: {
-          tags: ['CRM'],
+          tags: ['Clients'],
           summary: 'Chi tiết khách hàng',
           security: [{ bearerAuth: [] }],
           parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
@@ -968,7 +968,7 @@ Authorization: Bearer <your_token>
           }
         },
         put: {
-          tags: ['CRM'],
+          tags: ['Clients'],
           summary: 'Cập nhật khách hàng',
           security: [{ bearerAuth: [] }],
           parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
@@ -978,7 +978,7 @@ Authorization: Bearer <your_token>
           }
         },
         delete: {
-          tags: ['CRM'],
+          tags: ['Clients'],
           summary: 'Xóa mềm khách hàng',
           security: [{ bearerAuth: [] }],
           parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
@@ -987,9 +987,9 @@ Authorization: Bearer <your_token>
           }
         }
       },
-      '/crm/customers/{id}/logs': {
+      '/client/customers/{id}/logs': {
         get: {
-          tags: ['CRM'],
+          tags: ['Clients'],
           summary: 'Lịch sử thao tác khách hàng',
           security: [{ bearerAuth: [] }],
           parameters: [
@@ -1006,9 +1006,9 @@ Authorization: Bearer <your_token>
           }
         }
       },
-      '/crm/customers/{id}/restore': {
+      '/client/customers/{id}/restore': {
         post: {
-          tags: ['CRM'],
+          tags: ['Clients'],
           summary: 'Khôi phục khách hàng đã xóa (Admin)',
           security: [{ bearerAuth: [] }],
           parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
@@ -1017,9 +1017,9 @@ Authorization: Bearer <your_token>
           }
         }
       },
-      '/crm/customers/{id}/hard': {
+      '/client/customers/{id}/hard': {
         delete: {
-          tags: ['CRM'],
+          tags: ['Clients'],
           summary: 'Xóa vĩnh viễn khách hàng (Admin)',
           security: [{ bearerAuth: [] }],
           parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
@@ -1048,7 +1048,7 @@ function setupSwagger(app) {
       .swagger-ui .topbar { display: none }
       .swagger-ui .info .title { font-size: 2rem; color: #3b82f6; }
     `,
-    customSiteTitle: 'HRM-CRM API Docs',
+    customSiteTitle: 'HRM-Client API Docs',
     swaggerOptions: {
       persistAuthorization: true,
       displayRequestDuration: true,

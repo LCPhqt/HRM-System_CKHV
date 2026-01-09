@@ -11,13 +11,13 @@ function CustomerHistoryPage() {
   const [error, setError] = useState("");
 
   const sidebar = role === "admin" ? <AdminSidebar /> : <StaffSidebar />;
-  const backPath = role === "admin" ? "/crm" : "/staff/customers";
+  const backPath = role === "admin" ? "/client" : "/staff/customers";
 
   const fetchDeleted = async () => {
     setLoading(true);
     setError("");
     try {
-      const { data } = await client.get("/crm/customers/deleted", {
+      const { data } = await client.get("/client/customers/deleted", {
         params: { page: 1, limit: 200 },
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
@@ -42,7 +42,7 @@ function CustomerHistoryPage() {
     if (!id) return;
     try {
       await client.post(
-        `/crm/customers/${id}/restore`,
+        `/client/customers/${id}/restore`,
         {},
         { headers: token ? { Authorization: `Bearer ${token}` } : {} }
       );
@@ -58,7 +58,7 @@ function CustomerHistoryPage() {
     if (selectedIds.size === 0) return;
     try {
       await client.post(
-        "/crm/customers/restore/bulk",
+        "/client/customers/restore/bulk",
         { ids: Array.from(selectedIds) },
         { headers: token ? { Authorization: `Bearer ${token}` } : {} }
       );
@@ -75,7 +75,7 @@ function CustomerHistoryPage() {
     if (!window.confirm("Xóa vĩnh viễn các bản ghi đã chọn? Không thể khôi phục.")) return;
     try {
       await client.post(
-        "/crm/customers/hard/bulk",
+        "/client/customers/hard/bulk",
         { ids: Array.from(selectedIds) },
         { headers: token ? { Authorization: `Bearer ${token}` } : {} }
       );
@@ -91,7 +91,7 @@ function CustomerHistoryPage() {
     if (!id) return;
     if (!window.confirm("Xóa vĩnh viễn? Không thể khôi phục sau thao tác này.")) return;
     try {
-      await client.delete(`/crm/customers/${id}/hard`, {
+      await client.delete(`/client/customers/${id}/hard`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       await fetchDeleted();

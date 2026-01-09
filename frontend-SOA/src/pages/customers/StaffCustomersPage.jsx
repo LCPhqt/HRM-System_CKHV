@@ -146,7 +146,7 @@ export default function StaffCustomersPage() {
     setLoading(true);
     setError("");
     try {
-      const { data } = await client.get("/crm/customers", {
+      const { data } = await client.get("/client/customers", {
         headers: authHeaders,
         params: { page: 1, limit: 500 },
       });
@@ -176,7 +176,7 @@ export default function StaffCustomersPage() {
     if (!id) return;
     setLogModal((p) => ({ ...p, open: true, loading: true, customer, error: "", items: [] }));
     try {
-      const { data } = await client.get(`/crm/customers/${id}/logs`, {
+      const { data } = await client.get(`/client/customers/${id}/logs`, {
         params: { page: 1, limit: 50 },
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
@@ -194,7 +194,7 @@ export default function StaffCustomersPage() {
 
   const fetchCustomerCount = async () => {
     try {
-      const { data } = await client.get("/crm/customers/count", {
+      const { data } = await client.get("/client/customers/count", {
         headers: authHeaders,
       });
       if (typeof data?.count === "number") setCustomerCount(data.count);
@@ -267,7 +267,7 @@ export default function StaffCustomersPage() {
 
     try {
       await client.post(
-        "/crm/customers",
+        "/client/customers",
         {
           cccd: addForm.cccd.trim(),
           name: addForm.name.trim(),
@@ -301,7 +301,7 @@ export default function StaffCustomersPage() {
     if (!id) return;
     if (!window.confirm(`Xóa khách hàng "${c.name}"?`)) return;
     try {
-      await client.delete(`/crm/customers/${id}`, { headers: authHeaders });
+      await client.delete(`/client/customers/${id}`, { headers: authHeaders });
       setSelectedIds((prev) => {
         const next = new Set(prev);
         next.delete(id);
@@ -321,7 +321,7 @@ export default function StaffCustomersPage() {
     try {
       const ids = Array.from(selectedIds);
       await Promise.all(
-        ids.map((id) => client.delete(`/crm/customers/${id}`, { headers: authHeaders }))
+        ids.map((id) => client.delete(`/client/customers/${id}`, { headers: authHeaders }))
       );
       setSelectedIds(new Set());
       await fetchCustomers();
@@ -338,7 +338,7 @@ export default function StaffCustomersPage() {
     try {
       const ids = filtered.map((c) => c.id || c._id).filter(Boolean);
       await Promise.all(
-        ids.map((id) => client.delete(`/crm/customers/${id}`, { headers: authHeaders }))
+        ids.map((id) => client.delete(`/client/customers/${id}`, { headers: authHeaders }))
       );
       setSelectedIds(new Set());
       await fetchCustomers();
@@ -370,7 +370,7 @@ export default function StaffCustomersPage() {
 
     try {
       await client.put(
-        `/crm/customers/${editForm.id}`,
+        `/client/customers/${editForm.id}`,
         {
           cccd: editForm.cccd.trim(),
           name: editForm.name.trim(),
@@ -536,7 +536,7 @@ export default function StaffCustomersPage() {
     setImportReport(null);
     try {
       const { data } = await client.post(
-        "/crm/customers/import",
+        "/client/customers/import",
         { customers: importPreview },
         { headers: authHeaders }
       );
